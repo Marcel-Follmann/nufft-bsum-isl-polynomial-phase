@@ -1,0 +1,3 @@
+[submodule "99_Utilities"]
+	path = 99_Utilities
+	url = https://github.com/Marcel-Follmann/matlab_utils
