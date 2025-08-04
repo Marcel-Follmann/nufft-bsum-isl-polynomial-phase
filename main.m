@@ -1,13 +1,15 @@
 close all; clearvars; clc; 
-addpath("03_Functions\");
 addpath("99_Utilities\utils\");
-figureHandler = FigureHandler("savePath","01_Figures\");
 
-simulation = SIMULATION();
+rng default
 
-simulation.run();
+a = ones(3,1);
 
-fig = simulation.Plot_Function();
+N = 10;
+n = 0:N-1;
 
-figureHandler.PrepareEmf(fig); 
-% figureHandler.GenerateOutputs();
+a(3) = pi/N+pi;
+
+x = exp(1i*(a(1)+a(2)*n + a(3)*n.^2));
+r_xx = xcorr(x);
+isl = sum(abs(r_xx).^2);
