@@ -1,123 +1,141 @@
-clc; clear; close all;
+close all; clearvars; clc; 
 rng('shuffle');
-% rng(1);
-% addpath('..\common\')
-%% Sequence Set Design parameters
-N = 128;
-Q = 3;
-max_itrns = 5;
 
-lags = 1-N:N-1;
+addpath("99_Utilities\utils\");
+
+figureHandler = FigureHandler("savePath","01_Figures\");
+
+% rng(1);
+
+%% Sequence Set Design parameters
+nSequence = 128;
+paramOrder = 5;
+nIterations = 5;
+
+lags = 1-nSequence:nSequence-1;
 
 % flag for chosing objective of interest (f_ooi) - option1: 'PSL'/ option2: 'ISL'
-f_ooi = 'ISL';   % 'PSL' / 'ISL'
+objectiveFlag = 'ISL';   % 'PSL' / 'ISL'
 
-Obj_cnvrgnce = [];
+objectiveConvegence = [];
 
 % Seed Sequence design
-a_coeff_o_indx = 3;
-a_coeff_i = rand(Q,1);
-[xi] = create_sequence(a_coeff_i, N, Q);
+paramInitial = rand(paramOrder,1);
+[sequenceInitial] = CreateSequence(paramInitial, nSequence, paramOrder);
 
-[ psl,isl,PSLRdB,ISLRdB ] = pslisl(xi);
-InitSpecs = [ psl,isl,PSLRdB,ISLRdB ];
-switch f_ooi
+[ psl,isl,pslr_dB,islr_dB ] = pslisl(sequenceInitial);
+InitSpecs = [ psl,isl,pslr_dB,islr_dB ];
+switch objectiveFlag
     case 'PSL'
-        Obj_cnvrgnce(1) = PSLRdB;
+        objectiveConvegence(1) = pslr_dB;
     case 'ISL'
-        Obj_cnvrgnce(1) = ISLRdB;
+        objectiveConvegence(1) = islr_dB;
 end
 
-norm_acf_i = 10*log10(abs(xcorr(xi)).^2./N^2);
 
-figure(1); hold all; box on;
-plot(lags, norm_acf_i,'r-.');
 
 %% Optimization loop for chosen a_coeff [i.e. first, second or third a_coeff]
-up_lim = 1000;
-lwr_lim = -1000;
-a_points = 10000;
-a_var = linspace(lwr_lim, up_lim, a_points);
+paramLimitUpper = 1000;
+paramLimitLower = -1000;
+nParamVec = 10000;
+paramVec = linspace(paramLimitLower, paramLimitUpper, nParamVec);
 
-a_coeff = a_coeff_i;
+paramOptimized = paramInitial;
 
 % iterate over multiple iterations to optimize the objective
-for itr = 1: max_itrns
-% iterate over all the phase coefficients
-for q=1:Q
-a_coeff_o_indx = q;
-Obj_a_cntnr = zeros(2,length(a_var));
-% iterate over the entire range of phase coefficient {lwr_lim, up_lim}
-for i = 1:length(a_var)
-    a_coeff(a_coeff_o_indx) = a_var(i);
-    [xv] = create_sequence(a_coeff, N, Q);
-
-    [ psl,isl,PSLRdB,ISLRdB ] = pslisl(xv);
-
-    switch f_ooi
-        case 'PSL'
-            Obj_a_cntnr(:,i) = [psl; a_var(i)];
-        case 'ISL'
-            Obj_a_cntnr(:,i) = [isl; a_var(i)];
-    end
-end
-[~,indx] = min(Obj_a_cntnr(1,:));
-
-a_coeff(a_coeff_o_indx) = Obj_a_cntnr(2, indx);
-end
+for iIteration = 1: nIterations
+	% iterate over all the phase coefficients
+	for iOrder=1:paramOrder
+		objectiveParamArray = zeros(2,length(paramVec));
+		% iterate over the entire range of phase coefficient {lwr_lim, up_lim}
+		for iParam = 1:length(paramVec)
+    		paramOptimized(iOrder) = paramVec(iParam);
+    		[sequenceOptimized] = CreateSequence(paramOptimized, nSequence, paramOrder);
+		
+    		[ psl,isl,~, ~ ] = pslisl(sequenceOptimized);
+		
+    		switch objectiveFlag
+        		case 'PSL'
+            		objectiveParamArray(:,iParam) = [psl; paramVec(iParam)];
+        		case 'ISL'
+            		objectiveParamArray(:,iParam) = [isl; paramVec(iParam)];
+    		end
+		end
+		[~,indx] = min(objectiveParamArray(1,:));
+		
+		paramOptimized(iOrder) = objectiveParamArray(2, indx);
+	end
 
 %% Capture the ISL results for current iteration
-[x_int] = create_sequence(a_coeff, N, Q);
-[ psl,isl,PSLRdB,ISLRdB ] = pslisl(x_int);
-switch f_ooi
-    case 'PSL'
-        Obj_cnvrgnce(end+1) = PSLRdB;
-    case 'ISL'
-        Obj_cnvrgnce(end+1) = ISLRdB;
+[sequenceOptimized] = CreateSequence(paramOptimized, nSequence, paramOrder);
+[ ~,~,pslr_dB,islr_dB ] = pslisl(sequenceOptimized);
+	switch objectiveFlag
+    	case 'PSL'
+        	objectiveConvegence(iIteration + 1) = pslr_dB;
+    	case 'ISL'
+        	objectiveConvegence(iIteration + 1) = islr_dB;
+	end
 end
-end
 
 
-a_coeff_fnl = a_coeff;
-xf = x_int;
+%% Plot
+fig = {};
+[ psl,isl,pslr_dB,islr_dB ] = pslisl(sequenceOptimized);
+Final_Specs = [ psl,isl,pslr_dB,islr_dB ];
 
-[ psl,isl,PSLRdB,ISLRdB ] = pslisl(xf);
-Final_Specs = [ psl,isl,PSLRdB,ISLRdB ];
+acfOptimized = 10*log10(abs(xcorr(sequenceOptimized)).^2./nSequence^2);
+acfInitial = 10*log10(abs(xcorr(sequenceInitial)).^2./nSequence^2);
 
-norm_acf_f = 10*log10(abs(xcorr(xf)).^2./N^2);
-figure(1);
-plot(lags, norm_acf_f,'b-');
-xlabel('lag')
-ylabel('auto-correlation')
-legend('init seq','opt seq')
+fig{end+1} = figure("Name", "Autocorrelation Order " + num2str(paramOrder)); hold all; 
+plot(lags, acfOptimized,'b-', "DisplayName","Optimized Sequence");
+plot(lags, acfInitial,'r-.', "DisplayName","Initial Sequence");
+xlabel('lag $(-)$')
+ylabel('auto-correlation $(-)$')
+legend("Location","best");
 
 
-figure(2);
-plot(Obj_cnvrgnce);
+fig{end+1} = figure("Name","Objective Order" + num2str(paramOrder));
+plot(0:nIterations,objectiveConvegence);
 xlabel('iterations')
 ylabel('obj')
 
-arg_x = unwrap(atan2(imag(xi),real(xi)));
-arg_xf = unwrap(atan2(imag(xf),real(xf)));
-figure(24); box on; hold all; % grid on;
-indx = (1:N)';
-plot(indx, arg_x, '-.ro', 'linewidth', 1.5);
-plot(indx, arg_xf, '-.bo', 'linewidth', 1.5);
-xlabel('Code length');ylabel('Phase');
-hold off;
+phaseInitial = unwrap(atan2(imag(sequenceInitial),real(sequenceInitial)));
+phaseOptimized = unwrap(atan2(imag(sequenceOptimized),real(sequenceOptimized)));
 
-disp(a_coeff_fnl)
+fig{end+1} = figure("Name", "Phases Order" + num2str(paramOrder)); hold all; 
+indx = (1:nSequence)';
+plot(indx, phaseInitial, '-.ro', "DisplayName","Initial Phase");
+plot(indx, phaseOptimized, '-.bo', "DisplayName","Optimized Phase");
+xlabel('Code length');
+ylabel('Phase');
+legend("Location","best");
+
+
+for iFig = 1:numel(fig)
+	figureHandler.PreparePdf(fig{iFig}, ...
+		"width",		32,			...
+		"height",		16,			...
+		"font",			"Arial",	...
+		"fontSize",		20,			...
+		"lineWidth",	3,			...
+		"markerSize",	8			...
+		);
+
+end
+figureHandler.GenerateOutputs();
+
+disp(paramOptimized)
+
 %% Support functions
-function [x] = create_sequence(a_coeff, M, Q)
-    m = (1:M).';
-    theta_l = a_coeff(1) + a_coeff(2).*m + a_coeff(3).*m.^2;
-    theta_li = 0;
-    for q=1:Q
-        theta_li = theta_li + a_coeff(q).*m.^(q-1);
-    end
-    theta_x = theta_li(:);
+function [sequence] = CreateSequence(params, nSequence, paramOrder)
+    iSequenceVec = (1:nSequence).';
+    % phase = params(1) + params(2).*iSequenceVec + params(3).*iSequenceVec.^2;
+    phase = 0;
+    for iOrder=1:paramOrder
+        phase = phase + params(iOrder).*iSequenceVec.^(iOrder-1);
+	end
 
-    x = exp(1j*theta_x);
+    sequence = exp(1j*phase(:));
 end
 
 
