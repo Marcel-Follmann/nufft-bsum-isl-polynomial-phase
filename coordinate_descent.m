@@ -14,8 +14,8 @@ A2 = [5 2; 2 1];
 
 
 % Plot ----------------------------------------------------------------
-fig1 = Visualize(A1, x0, "Coordinate Descent uncoupled");
-fig2 = Visualize(A2, x0, "Coordinate Descent coupled");
+fig1 = Visualize(A1, x0, "uncoupled");
+fig2 = Visualize(A2, x0, "coupled");
 
 figureHandler.PrepareEmf(fig1, "width", 15.5);
 figureHandler.PrepareEmf(fig2, "width", 15.5);
