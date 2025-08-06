@@ -6,62 +6,39 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 %% Numerical comparison of original ISL calculation to reformulated one
 
 %% Parameters: 
-numSamples = 20;
-numParams = 3;
-p = numParams;
+nSamples = 20;
+nParams = 3;
 
-params = randn(numParams, 1);
-paramIndexVec = (0:numParams-1).';
-sampleIndexVec = 0:numSamples-1;
+params = randn(nParams, 1);
+paramIndexVec = (0:nParams-1).';
+sampleIndexVec = 0:nSamples-1;
 
-phaseParam = params .* (sampleIndexVec.^paramIndexVec);
-signal = exp(1i*sum(phaseParam, 1));
+paramPhase = params .* (sampleIndexVec.^paramIndexVec);
+signal = exp(1i*sum(paramPhase, 1));
 
-lags = -(numSamples-1):(numSamples-1);
+lags = -(nSamples-1):(nSamples-1);
 
-%% 1) ISL via xcorr
-acfOriginal = xcorr(signal);% / numSamples;
-islOriginal = Isl(acfOriginal);
+%% 1) ACF via xcorr
+acfOriginal = xcorr(signal);
 
-%% 2) ISL via analytical double-sum
-islAnalytic = 0;
-for k = 1:(numSamples-1)
-	
-	% Constant term
-	termConstant = 0;
-	for n = 1:numSamples
-		termConstant = termConstant + abs(ComputeResidualComplexWeight(n,k,params,p)).^2;
+%% 2) ACF via analytical formula
+% r_{xx}(k) = \sum_{n=1}^{N-k} x_n^* * x_{n+k}, k = {0, ... , N-1}
+
+acfAnalytical = zeros(size(signal)); 
+for k = 0:nSamples-1
+
+	for n = 1:nSamples - k
+		acfAnalytical(k+1) = acfAnalytical(k+1) + ...
+			conj(signal(n)) * signal(n+k);
 	end
-
-	% Cosine term
-	termCosine = 0;
-	for n=1:numSamples
-		for m=n+1:numSamples
-			termCosine = termCosine + ...
-				ComputeAmplitude(n,m,k,p,params) * ...
-				cos( ...
-					ComputeFrequencyIndex(n,m,k,p) * params(p) + ...
-					ComputePhaseOffset(n,m,k,params,p) ...
-				);
-		end
-	end
-
-	islAnalytic = islAnalytic + 2*(termConstant + termCosine);
 end
 
 fig = {};
 fig{end+1} = figure("Name","Autocorrelation"); hold all; 
 
-plot(lags, 20*log10(abs(acfOriginal)));
+plot(lags, abs(acfOriginal), ...
+	'-', "DisplayName","Original ACF");
+plot(lags(nSamples:end), abs(acfAnalytical), ...
+	'--', "DisplayName","Analystical ACF");
 
-
-% Original ISL calculation
-
-
-function isl_linear = Isl(autocorrelation)
-	numSamples = (numel(autocorrelation)+1) / 2;
-
-	isl_linear = sum(abs(autocorrelation).^2) - abs(autocorrelation(numSamples));
-	isl_dB = 10*log10(isl_linear);
-end
-
+legend("Location","northeast");

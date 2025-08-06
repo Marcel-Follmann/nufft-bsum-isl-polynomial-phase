@@ -1,4 +1,4 @@
-function residual = ComputeResidualComplexWeight(n,k, params, excludeOrder)
+function residual = ResidualComplexWeight(n,k, params, excludeOrder)
 	% exp(j sum_{q=1 and q \neq p)^Q a_q d_{n,k}^{(q)}
 	nOrder = numel(params);
 	
