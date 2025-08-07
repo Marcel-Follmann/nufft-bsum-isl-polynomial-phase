@@ -6,39 +6,35 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 %% Numerical comparison of original ISL calculation to reformulated one
 
 %% Parameters: 
-nSamples = 20;
+nSamples = 5;
 nParams = 3;
 
-params = randn(nParams, 1);
-paramIndexVec = (0:nParams-1).';
-sampleIndexVec = 0:nSamples-1;
-
-paramPhase = params .* (sampleIndexVec.^paramIndexVec);
-signal = exp(1i*sum(paramPhase, 1));
-
-lags = -(nSamples-1):(nSamples-1);
-
-%% 1) ACF via xcorr
-acfOriginal = xcorr(signal);
-
-%% 2) ACF via analytical formula
-% r_{xx}(k) = \sum_{n=1}^{N-k} x_n^* * x_{n+k}, k = {0, ... , N-1}
-
-acfAnalytical = zeros(size(signal)); 
+d = zeros(nSamples-1, nSamples - 1, nSamples);
 for k = 0:nSamples-1
-
 	for n = 1:nSamples - k
-		acfAnalytical(k+1) = acfAnalytical(k+1) + ...
-			conj(signal(n)) * signal(n+k);
+		for m = 1:nSamples - k
+			d(n,m,k+1) = eqn.deltaD(n,m,k,5);
+		end
 	end
+	% surf(d(:,:,k+1));
+	% zlim(200*[-1,1])
+	% pause(.5);
 end
 
-fig = {};
-fig{end+1} = figure("Name","Autocorrelation"); hold all; 
+% Flatten your 3D array and remove the zeros
+D = d(:);
+D = D(D~=0);
 
-plot(lags, abs(acfOriginal), ...
-	'-', "DisplayName","Original ACF");
-plot(lags(nSamples:end), abs(acfAnalytical), ...
-	'--', "DisplayName","Analystical ACF");
+% Count occurrences of each distinct d-value
+[vals, ~, idx] = unique(D);
+counts = accumarray(idx,1);
 
-legend("Location","northeast");
+% Now plot with plot()
+figure;
+plot(vals, counts, '-o','LineWidth',1.5);
+xlabel('d value');
+ylabel('Number of occurrences');
+grid on;
+
+
+

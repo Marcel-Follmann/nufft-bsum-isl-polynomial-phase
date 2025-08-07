@@ -1,13 +1,13 @@
 function residual = c(n,k, params, excludeOrder)
-	% exp(j sum_{q=1 and q \neq p)^Q a_q d_{n,k}^{(q)}
+	% Introduced in Eqn. (6)
 	nOrder = numel(params);
 	
 	phaseSum = 0;
-	for iOrder = 1:nOrder-1
+	for iOrder = 2:nOrder
 		if iOrder == excludeOrder, continue; end
 
 		phaseSum = phaseSum + ...
-			params(iOrder+1) * eqn.d(n,k,iOrder);
+			params(iOrder) * eqn.d(n,k,iOrder);
 	end
 
 	residual = exp(1i*phaseSum);
