@@ -8,7 +8,6 @@ figures = {};
 maxIterations = 20;
 N = 20;
 Q = 4;
-stepImprovementGoal_dB = 0.1;
 
 a0 = randn(Q,1);
 
