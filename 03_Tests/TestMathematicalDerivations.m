@@ -122,6 +122,30 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 			end
 		end
 
+		function Test_Eqn_8(tc)
+			function Subtest_Eqn_8(tc,p)
+				for q = 1:tc.Q
+					for k = 1:tc.N-1
+						for n=1:tc.N-k
+							for m=1:tc.N-k
+								deltaD(n,m,k,q) = eqn.deltaD(n,m,k,q);
+							end
+						end
+					end
+
+					deltaD_p = unique()
+					vec = reshape( deltaD(:,:,:,q), [], 1);
+					[d{q}, ~, ic] = unique(vec);
+					counts{q} = accumarray(ic,1);
+
+
+
+				end
+				
+			end
+			Subtest_Eqn_8(tc,2);
+		end
+
 	end
 
 end
