@@ -19,26 +19,26 @@ simulation = Simulation( ...
 	);
 
 a(:,1) = a0;
-isl(1) = simulation.ComputeIsl_dB(a(:,1));
+isl_dB(1) = simulation.ComputeIsl_dB(a(:,1));
 for i = 1:maxIterations
 
 	a(:,i+1) = simulation.CoordinateDescent(a(:,i), ...
 		"fftOversampling",10 ...
 		);
 
-	isl(i+1) = simulation.ComputeIsl_dB(a(:,i));
+	isl_dB(i+1) = simulation.ComputeIsl_dB(a(:,i));
 end
 
 %% Plot
 figures{end+1} = figure("Name", "Convergence");
-plot(0:maxIterations,10*log10(isl), ...
+plot(0:maxIterations,10*log10(isl_dB), ...
 	'-', "DisplayName", "ISL");
 xlabel("CD Iterations ($-$)");
 ylabel("ISL ($dB$)");
 grid on;
 
-fprintf("Initial ISL: %.2e\n", isl(1));
-fprintf("CD ISL: %.2e\n", isl(end));
+fprintf("Initial ISL: %.2e\n", isl_dB(1));
+fprintf("CD ISL: %.2e\n", isl_dB(end));
 
 %% Format Figures
 for iFigure = 1:numel(figures)
