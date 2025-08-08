@@ -9,8 +9,8 @@ classdef Simulation < handle
 		%%
 		function obj = Simulation(params)
 			arguments
-				params.N
-				params.Q
+				params.N (1,1) double {mustBePositive} % Sequence Length
+				params.Q (1,1) double {mustBePositive} % Number of Parameters
 			end
 
 			obj.N = params.N;
@@ -23,8 +23,8 @@ classdef Simulation < handle
 		function a = CoordinateDescent(obj, a0, options)
 			arguments
 				obj 
-				a0 
-				options.fftOversampling = 1
+				a0 (:,1) double % Initial Parameters
+				options.fftOversampling (1,1) double {mustBePositive} = 1
 			end
 			a = a0;
 			
@@ -79,6 +79,11 @@ classdef Simulation < handle
 
 		%%
 		function g = ComputeG(obj, a, p)
+			arguments
+				obj 
+				a (:,1) double
+				p (1,1) double {mustBePositive} % Selected parameter a_p
+			end
 			d_p = obj.deltaD(:,:,:,p);  
 			dmin = min(d_p(:));  
 			dmax = max(d_p(:));  

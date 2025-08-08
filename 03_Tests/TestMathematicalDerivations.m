@@ -7,7 +7,7 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 		lags
 		acfOriginal
 		islOriginal
-		relTol = 1e-3
+		relTol = 1e-10
 	end
 
 	methods (TestClassSetup)
@@ -159,6 +159,7 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 					end
 				end
 
+				% Calculate the actual ISL
 				islAnalytical = 0;
 				for id = 1:numel(d)
 					islAnalytical = islAnalytical + ...

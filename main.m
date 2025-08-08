@@ -5,7 +5,7 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 figures = {};
 
 %% Parameters
-maxIterations = 20;
+maxIterations = 100;
 N = 20;
 Q = 4;
 
@@ -30,8 +30,8 @@ end
 
 %% Plot
 figures{end+1} = figure("Name", "Convergence");
-plot(0:maxIterations,10*log10(isl_dB), ...
-	'-', "DisplayName", "ISL");
+semilogx(0:maxIterations,10*log10(isl_dB), ...
+	'-o', "DisplayName", "ISL");
 xlabel("CD Iterations ($-$)");
 ylabel("ISL ($dB$)");
 grid on;
@@ -47,7 +47,7 @@ for iFigure = 1:numel(figures)
 		"font",			"Arial",	...
 		"fontSize",		20,			...
 		"lineWidth",	3,			...
-		"markerSize",	8			...
+		"markerSize",	4			...
 		);
 end
 figureHandler.GenerateOutputs();
