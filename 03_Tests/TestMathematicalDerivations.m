@@ -1,6 +1,6 @@
 classdef TestMathematicalDerivations < matlab.unittest.TestCase
 	properties
-		N = 3
+		N = 20
 		Q = 4
 		a
 		x
