@@ -3,6 +3,7 @@ classdef Simulation < handle
 		N
 		Q
 		deltaD
+        isl
 	end
 
 	methods
@@ -15,6 +16,7 @@ classdef Simulation < handle
 
 			obj.N = params.N;
 			obj.Q = params.Q;
+            obj.isl = Inf;
 
 			obj.deltaD = eqn.deltaD_mat(obj.N, obj.Q);
             fprintf("Initilization complete.\n")
@@ -36,11 +38,18 @@ classdef Simulation < handle
 				G = ifft(gShift, options.fftOversampling*numel(g));
 				nG = numel(G);
 
-				[~, k] = min(abs(G), [], "all");
-				a(p) = obj.fftBin2parameterVaule(k,nG);
+				[isl, k] = min(abs(G), [], "all");
+                if isl < obj.isl
+                    obj.isl = isl;
+                    a(p) = obj.fftBin2parameterVaule(k,nG);
+                    fprintf("+")
+                else
+                    fprintf("*");
+                end
+                
+				
             end
-            
-            fprintf("Done.\n");
+            fprintf(" Done.\n");
 		end
 
 		%%
