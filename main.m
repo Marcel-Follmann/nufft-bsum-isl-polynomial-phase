@@ -9,7 +9,8 @@ maxIterations = 10;
 N = 20;
 Q = 4;
 
-a0 = [-0.920274947429725;1.179610379138849;1.508569156483106;1.062646144475084];%randn(Q,1);
+a0 = randn(Q,1);
+% a0 = [randn(3,1);zeros(Q-3,1)];
 
 %% Coordinate Descent Simulation
 simulation = Simulation( ...
@@ -22,7 +23,7 @@ isl_dB(1) = simulation.ComputeIsl_dB(a(:,1));
 for i = 1:maxIterations
 
 	a(:,i+1) = simulation.CoordinateDescent(a(:,i), ...
-		"fftOversampling",1 ...
+		"fftOversampling",2^10 ...
 		);
 
 	isl_dB(i+1) = simulation.ComputeIsl_dB(a(:,i));

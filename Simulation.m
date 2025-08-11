@@ -17,6 +17,7 @@ classdef Simulation < handle
 			obj.Q = params.Q;
 
 			obj.deltaD = eqn.deltaD_mat(obj.N, obj.Q);
+            fprintf("Initilization complete.\n")
 		end
 
 		%%
@@ -25,18 +26,21 @@ classdef Simulation < handle
 				obj 
 				a0 (:,1) double % Initial Parameters
 				options.fftOversampling (1,1) double {mustBePositive} = 1
-			end
+            end
+            fprintf("Start CD step. ");
 			a = a0;
 			
 			for p = 3:obj.Q
 				g = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
-
-				G = fftshift(fft(g, options.fftOversampling*numel(g), 2));
+                gShift = ifftshift(g);
+				G = ifft(gShift, options.fftOversampling*numel(g));
 				nG = numel(G);
 
 				[~, k] = min(abs(G), [], "all");
 				a(p) = 2*pi*(k-1)/nG;
-			end
+                a(p) = mod(a(p) + pi, 2*pi) - pi;
+            end
+            fprintf("Done.\n");
 		end
 
 		%%

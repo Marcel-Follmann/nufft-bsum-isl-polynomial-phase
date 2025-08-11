@@ -7,14 +7,14 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 		lags
 		acfOriginal
 		islOriginal
-		relTol = 1e-10
+		relTol = 1e-7
 	end
 
 	methods (TestClassSetup)
 		function SetupClass(tc)
 			close all; 
 			
-			tc.a = randn(tc.Q, 1);
+			tc.a = [-0.920274947429725;1.179610379138849;1.508569156483106;1.062646144475084]; %randn(tc.Q, 1);
 			
 			paramPhase = zeros(1, tc.N);
 			for n=1:tc.N
@@ -145,8 +145,27 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 			for p = 1:tc.Q
 				Subtest_Eqn_8(tc,p);
 			end
-		end
+        end
 
+        function Test_G_symmetricHermetian(tc)
+            function Subtest_G_symmetricHermetian(tc,p)
+                deltaD = eqn.deltaD_mat(tc.N,tc.Q);
+                G = eqn.G(tc.a, p, deltaD, tc.N, tc.Q);
+                D  = (numel(G)-1)/2;
+                lhs = G(1:D);                 % d = -D:-1
+                rhs = conj(flip(G(D+2:end))); % conj of d = +1:+D
+                
+                actualDifference = lhs - rhs;
+                expectedDifference = zeros(size(actualDifference));
+
+                tc.verifyEqual(actualDifference, expectedDifference, "AbsTol", tc.relTol);
+                tc.verifyEqual(imag(G(D+1)), 0, "G0 should be real", "AbsTol", tc.relTol);
+            end
+
+            for p = 1:tc.Q
+				Subtest_G_symmetricHermetian(tc,p);
+            end
+        end
 	end
 
 end

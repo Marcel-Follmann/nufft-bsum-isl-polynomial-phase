@@ -210,7 +210,7 @@ if nF == 1
     r       = r / max(r);
 end
 psl         = max(r(1:N-1));
-isl         = sum(r(1:N-1).^2);
+isl         = 2*sum(r(1:N-1).^2);
 
 PSLRdB      = 10*log10(psl^2/N^2);
 ISLRdB      = 10*log10(isl/N^2);
