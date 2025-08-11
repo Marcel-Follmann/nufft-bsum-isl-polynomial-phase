@@ -16,7 +16,7 @@ classdef Simulation < handle
 			obj.N = params.N;
 			obj.Q = params.Q;
 
-			obj.deltaD = obj.ComputeDeltaD();
+			obj.deltaD = eqn.deltaD_mat(obj.N, obj.Q);
 		end
 
 		%%
@@ -29,7 +29,7 @@ classdef Simulation < handle
 			a = a0;
 			
 			for p = 3:obj.Q
-				g = obj.ComputeG(a, p);
+				g = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
 
 				G = fftshift(fft(g, options.fftOversampling*numel(g), 2));
 				nG = numel(G);
@@ -54,7 +54,7 @@ classdef Simulation < handle
 			
 			acfFull = xcorr(x);
 			acf = acfFull(obj.N:end);
-			isl = 2*sum( abs(acf(2:end)).^2 );
+			isl = 2*sum( abs(acf(2:end)).^2 ./ obj.N^2);
 			isl_dB = 10*log10(isl);
 		end
 
@@ -62,53 +62,5 @@ classdef Simulation < handle
 
 	methods (Access	= private)
 		%%
-		function deltaD = ComputeDeltaD(obj)
-			deltaD = zeros(obj.N-1, obj.N-1, obj.N-1, obj.Q);
-			for q = 1:obj.Q
-				for k = 1:obj.N-1
-					for n=1:obj.N-k
-						for m=1:obj.N-k
-
-							deltaD(n,m,k,q) = eqn.deltaD(n,m,k,q);
-
-						end
-					end
-				end
-			end
-		end
-
-		%%
-		function g = ComputeG(obj, a, p)
-			arguments
-				obj 
-				a (:,1) double
-				p (1,1) double {mustBePositive} % Selected parameter a_p
-			end
-			d_p = obj.deltaD(:,:,:,p);  
-			dmin = min(d_p(:));  
-			dmax = max(d_p(:));  
-			d = dmin:dmax;
-			id_offset = 1 - dmin;
-
-			g = zeros(size(d));       
-			for k = 1:obj.N-1
-				for n = 1:obj.N-k
-					for m = 1:obj.N-k
-
-						id = obj.deltaD(n,m,k,p);
-						idx = id + id_offset;
-
-						phase = 0;
-						for q = 2:obj.Q
-							if q == p, continue; end
-							phase = phase + a(q)*obj.deltaD(n,m,k,q);
-						end
-						g(idx) = g(idx) + 2*exp(1j*phase);
-
-					end
-				end
-			end
-		end
-
 	end
 end

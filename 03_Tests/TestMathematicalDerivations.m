@@ -125,40 +125,10 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 		function Test_Eqn_8(tc)
 			function Subtest_Eqn_8(tc,p)
 				% Compoute all possible deltaD
-				for q = 1:tc.Q
-					for k = 1:tc.N-1
-						for n=1:tc.N-k
-							for m=1:tc.N-k
-								deltaD(n,m,k,q) = eqn.deltaD(n,m,k,q);
-							end
-						end
-					end
-				end
+                deltaD = eqn.deltaD_mat(tc.N,tc.Q);
 				
-				% Construct Gd
-				d_p = deltaD(:,:,:,p);  
-				dmin = min(d_p(:));  
-				dmax = max(d_p(:));  
-				d = dmin:dmax;
-				id_offset = 1 - dmin;
-
-				G = zeros(size(d));       
-				for k = 1:(tc.N-1)
-					for n = 1:tc.N-k
-						for m = 1:tc.N-k
-							id = deltaD(n,m,k,p);
-							idx = id+id_offset;
-
-							phase = 0;
-							for q = 2:tc.Q
-								if q == p, continue; end
-								phase = phase + tc.a(q)*deltaD(n,m,k,q);
-							end
-							G(idx) = G(idx) + 2*exp(1j*phase);
-						end
-					end
-				end
-
+                G = eqn.G(tc.a, p, deltaD, tc.N, tc.Q);
+                d = (1:numel(G)) - ceil(numel(G)/2);
 				% Calculate the actual ISL
 				islAnalytical = 0;
 				for id = 1:numel(d)

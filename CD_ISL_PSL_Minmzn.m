@@ -8,8 +8,8 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 % rng(1);
 
 %% Sequence Set Design parameters
-nSequence = 128;
-paramOrder = 5;
+nSequence = 20;
+paramOrder = 4;
 nIterations = 5;
 
 lags = 1-nSequence:nSequence-1;
@@ -20,7 +20,7 @@ objectiveFlag = 'ISL';   % 'PSL' / 'ISL'
 objectiveConvegence = [];
 
 % Seed Sequence design
-paramInitial = rand(paramOrder,1);
+paramInitial = [-0.920274947429725;1.179610379138849;1.508569156483106;1.062646144475084]; %rand(paramOrder,1);
 [sequenceInitial] = CreateSequence(paramInitial, nSequence, paramOrder);
 
 [ psl,isl,pslr_dB,islr_dB ] = pslisl(sequenceInitial);
