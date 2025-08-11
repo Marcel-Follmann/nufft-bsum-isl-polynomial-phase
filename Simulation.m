@@ -37,9 +37,9 @@ classdef Simulation < handle
 				nG = numel(G);
 
 				[~, k] = min(abs(G), [], "all");
-				a(p) = 2*pi*(k-1)/nG;
-                a(p) = mod(a(p) + pi, 2*pi) - pi;
+				a(p) = obj.fftBin2parameterVaule(k,nG);
             end
+            
             fprintf("Done.\n");
 		end
 
@@ -64,7 +64,12 @@ classdef Simulation < handle
 
 	end
 
-	methods (Access	= private)
-		%%
+	methods (Static)
+        %%
+        function a = fftBin2parameterVaule(bin, nBins)
+            a_unwrapped = 2*pi*(bin-1)/nBins;
+            a = mod(a_unwrapped + pi, 2*pi) - pi;
+        end
+
 	end
 end
