@@ -5,12 +5,12 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 figures = {};
 
 %% Parameters
-maxIterations = 5;
-N = 100;
-Q = 5;
+maxIterations = 3;
+N = 20;
+Q = 6;
 
-% a0 = randn(Q,1);
-a0 = [randn(3,1);zeros(Q-3,1)]; % Tends to produce better ISLs
+a0 = randn(Q,1);
+% a0 = [randn(3,1);zeros(Q-3,1)]; % Tends to produce better ISLs
 
 %% Coordinate Descent Simulation
 simulation = Simulation( ...
@@ -22,9 +22,7 @@ a(:,1) = a0;
 isl_dB(1) = simulation.ComputeIsl_dB(a(:,1));
 for i = 1:maxIterations
 
-	a(:,i+1) = simulation.CoordinateDescent(a(:,i), ...
-		"fftOversampling",1 ...
-		);
+	a(:,i+1) = simulation.CoordinateDescent(a(:,i));
 
 	isl_dB(i+1) = simulation.ComputeIsl_dB(a(:,i));
 end
