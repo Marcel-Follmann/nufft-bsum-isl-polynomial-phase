@@ -14,7 +14,7 @@ classdef TestMathematicalDerivations < matlab.unittest.TestCase
 		function SetupClass(tc)
 			close all; 
 			
-			tc.a = [-0.920274947429725;1.179610379138849;1.508569156483106;1.062646144475084]; %randn(tc.Q, 1);
+			tc.a = randn(tc.Q, 1);
 			
 			paramPhase = zeros(1, tc.N);
 			for n=1:tc.N
