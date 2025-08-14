@@ -24,9 +24,10 @@ figureHandler.GenerateOutputs();
 function fig = Visualize(A, x0, title)
 	fig = figure("Name",title);
 	[x, y, z] = GetEllipse(A);
-	contour(x, y, z, "DisplayName","$$f(x)$$"); hold on; 
+	surf(x, y, z, "DisplayName","$$f(x)$$", "FaceAlpha",.4, "HandleVisibility","on"); hold on; 
+	view(2);
 	shading interp
-	
+	contour(x, y, z, "DisplayName","$$f(x)$$", "HandleVisibility","off")
 	[x, y, z] = CoordinateDescent(A, x0, 10);
 	
 	
@@ -34,10 +35,11 @@ function fig = Visualize(A, x0, title)
 	plot3(x(1),  y(1),  z(1),  's', "DisplayName","$$x_0$$");
 	plot3(x, y, z, '-k', "DisplayName","$$x_k$$");
 	grid on; grid minor;
-	legend("Location","northeast")
+	legend("Location","northoutside","NumColumns",5)
 	
 	xlabel("x coordinate");
 	ylabel("y coordinate");
+	zlabel("z value")
 end
 
 
