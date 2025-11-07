@@ -42,19 +42,9 @@ classdef MmApproach < handle
         end
 
         function isl = DeriveIsl(obj, c)
-            q(:,1) = 0:obj.Q-1;
-            tmp = 0;
-            for k = 1:obj.N-1
-                for n = 1:obj.N-k
-                    for m = 1:obj.N-k
-                        phaseDifference = Polynom(q, n+k) - Polynom(q,n) - ...
-                            (Polynom(q, m+k) - Polynom(q, m));
-                        phase = sum(c .* phaseDifference, 1);
-                        tmp = tmp + exp(1j*phase);
-                    end
-                end
-            end
-            isl = 2*tmp / obj.N^3;
+            phase = sum(c .* obj.Delta, 1);
+            tmp = sum(exp(1j*phase), 2);
+            isl = 2 * tmp / obj.N^3;
         end
 
 
