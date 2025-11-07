@@ -12,6 +12,8 @@ classdef MmApproach
         function obj = MmApproach(Q, N)
             obj.Q = Q; 
             obj.N = N;
+
+            obj.D = obj.PrecalcD();
         end
 
         function x = SimulateSignal(obj, c)
@@ -31,6 +33,12 @@ classdef MmApproach
             isl = sum(acf(1:obj.N)) / obj.N;
         end
 
+        function acf = DeriveAcf(obj, c)
+            phase = sum(c.*obj.D, 1);
+            acfHalf = abs(sum(exp(1j*phase), 3)) / obj.N;
+            acf = [acfHalf, 1, flip(acfHalf)];
+        end
+
 
     end
 
@@ -47,11 +55,17 @@ classdef MmApproach
         end
 
         function fig = VisualizeAcf(obj, c)
-            acf = obj.SimulateAcf(c);
+            acfSimu = obj.SimulateAcf(c);
+            acfDerived = obj.DeriveAcf(c);
             lags = -obj.N+1:obj.N-1; 
-            fig = figure("Name", "Acf");
-            plot(lags, 20*log10(acf));
+            
+            fig = figure("Name", "Acf"); hold on; 
+            plot(lags, 20*log10(acfSimu), ...
+                "DisplayName","Simulated");
+            plot(lags, 20*log10(acfDerived), '--', ...
+                "DisplayName","Theoretical");
             grid on; grid minor;
+        legend("Location","northeast");
         end
 
         function PrintIsl(obj, c)
@@ -65,7 +79,14 @@ classdef MmApproach
     %% Private Methods
     methods (Access = private)
         function D = PrecalcD(obj)
+            q(:,1) = 0:obj.Q-1;
+            D = zeros(obj.Q, obj.N-1, obj.N-1);
 
+            for k = 1:obj.N-1
+                for n = 1:obj.N-k
+                    D(:, k, n) = Polynom(q, n+k) - Polynom(q, n);
+                end
+            end
         end
 
         function Delta = PrecalcDelta(obj)
