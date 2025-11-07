@@ -17,7 +17,14 @@ classdef MmApproach < handle
             obj.Delta = obj.PrecalcDelta();
         end
 
-        function cNew = MmStep(obj, p, c)
+        function [cNew, breakCondition] = MmStep(obj, p, c, options)
+            arguments
+                obj 
+                p 
+                c 
+                options.Tol = 1e-6 
+            end
+            breakCondition = true;
             c = c(:,1);
             cNew = c;
             q(:,1) = 0:obj.Q-1;
@@ -30,16 +37,20 @@ classdef MmApproach < handle
 
             % LS Step
             psi = cConst.' * deltaConst;
-            b = sum( cP*deltaP + sin(cP*deltaP + psi) , 2);
+            b = - sum( deltaP.*sin(cP*deltaP + psi) , 2);
             L = sum( deltaP.^2 , 2);
-            cP = b/L;
+            cP_new = cP - b/L;
 
             % Break condition and update
-            if isnan(cP) || abs(cP) == Inf
+            if isnan(cP_new) || abs(cP_new) == Inf
                 return
-            end            
-            cNew(p==q) = cP;
-            
+            end     
+
+            cNew(p==q) = cP_new;
+            if abs(cP_new-cP) <= options.Tol
+                return
+            end
+            breakCondition = false; 
         end
 
         function x = SimulateSignal(obj, c)
