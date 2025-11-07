@@ -43,7 +43,8 @@ classdef MmApproach < handle
 
         function isl = DeriveIsl(obj, c)
             phase = sum(c .* obj.Delta, 1);
-            tmp = sum(exp(1j*phase), 2);
+            const = obj.N*(obj.N-1)/2;
+            tmp = const + 2*sum(cos(phase), 2, 'omitnan');
             isl = 2 * tmp / obj.N^3;
         end
 
@@ -101,14 +102,14 @@ classdef MmApproach < handle
 
         function Delta = PrecalcDelta(obj)
             q(:,1) = 0:obj.Q-1;
-            Delta = zeros(obj.Q, obj.N*(obj.N-1)*(2*obj.N-1)/6);
+            Delta = NaN + ones(obj.Q, obj.N*(obj.N-1)*(2*obj.N-1)/3);
 
             i = 1;
             for k = 1:obj.N-1
                 for n = 1:obj.N-k
-                    for m = 1:obj.N-k
+                    for d = 1:obj.N-k-n
                         Delta(:,i) = Polynom(q, n+k) - Polynom(q,n) - ...
-                            (Polynom(q, m+k) - Polynom(q, m));
+                            (Polynom(q, n+d+k) - Polynom(q, n+d));
                         i = i+1;
                     end
                 end
