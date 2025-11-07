@@ -20,7 +20,7 @@ simu.PrintIsl(c);
 
 %% Format Figures
 for i = 1:numel(fig)
-    figureHandler.PrepareEmf(fig{i});
+    figureHandler.PreparePdf(fig{i});
 end
 figureHandler.GenerateOutputs()
 clear ans; 

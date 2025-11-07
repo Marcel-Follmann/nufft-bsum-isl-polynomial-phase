@@ -1,4 +1,4 @@
-classdef MmApproach
+classdef MmApproach < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -34,9 +34,21 @@ classdef MmApproach
         end
 
         function acf = DeriveAcf(obj, c)
-            phase = sum(c.*obj.D, 1);
-            acfHalf = abs(sum(exp(1j*phase), 3)) / obj.N;
-            acf = [acfHalf, 1, flip(acfHalf)];
+            q(:,1) = 0:obj.Q-1;
+
+            acfHalf = zeros(1, obj.N-1);
+            for k = 1:obj.N-1
+                for n = 1:obj.N-k
+                    for iQ = 1:numel(q)
+                        phase = c(iQ) * (Polynom(q(iQ), n+k) - Polynom(q(iQ), n));
+                    end
+                    
+                    acfHalf(k) = acfHalf(k) + ...
+                        exp(1j*sum(phase,1)) / obj.N;
+                end
+            end
+
+            acf = abs([flip(acfHalf), 1, acfHalf]);
         end
 
 
