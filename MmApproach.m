@@ -34,17 +34,8 @@ classdef MmApproach < handle
         end
 
         function acf = DeriveAcf(obj, c)
-            q(:,1) = 0:obj.Q-1;
-
-            acfHalf = zeros(1, obj.N-1);
-            for k = 1:obj.N-1
-                for n = 1:obj.N-k
-                    phase = sum(c .* obj.D(:, k, n), 1);
-                    
-                    acfHalf(k) = acfHalf(k) + ...
-                        exp(1j*phase) / obj.N;
-                end
-            end
+            phase = sum(c .* obj.D, 1);
+            acfHalf = sum(exp(1j*phase),3, 'omitnan') / obj.N;
 
             acf = abs([flip(acfHalf), 1, acfHalf]);
         end
@@ -90,7 +81,7 @@ classdef MmApproach < handle
     methods (Access = private)
         function D = PrecalcD(obj)
             q(:,1) = 0:obj.Q-1;
-            D = zeros(obj.Q, obj.N-1, obj.N-1);
+            D = NaN * ones(obj.Q, obj.N-1, obj.N-1);
 
             for k = 1:obj.N-1
                 for n = 1:obj.N-k
