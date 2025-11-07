@@ -14,6 +14,7 @@ classdef MmApproach < handle
             obj.N = N;
 
             obj.D = obj.PrecalcD();
+            obj.Delta = obj.PrecalcDelta();
         end
 
         function x = SimulateSignal(obj, c)
@@ -30,14 +31,30 @@ classdef MmApproach < handle
 
         function isl = SimulateIsl(obj, c)
             acf = obj.SimulateAcf(c); 
-            isl = sum(acf(1:obj.N)) / obj.N;
+            isl = 2 * sum(acf(1:obj.N-1).^2) / obj.N;
         end
 
         function acf = DeriveAcf(obj, c)
             phase = sum(c .* obj.D, 1);
-            acfHalf = sum(exp(1j*phase),3, 'omitnan') / obj.N;
+            acfHalf = sum(exp(1j*phase),3, 'omitnan');
 
-            acf = abs([flip(acfHalf), 1, acfHalf]);
+            acf = abs([flip(acfHalf), obj.N, acfHalf]) / obj.N;
+        end
+
+        function isl = DeriveIsl(obj, c)
+            q(:,1) = 0:obj.Q-1;
+            tmp = 0;
+            for k = 1:obj.N-1
+                for n = 1:obj.N-k
+                    for m = 1:obj.N-k
+                        phaseDifference = Polynom(q, n+k) - Polynom(q,n) - ...
+                            (Polynom(q, m+k) - Polynom(q, m));
+                        phase = sum(c .* phaseDifference, 1);
+                        tmp = tmp + exp(1j*phase);
+                    end
+                end
+            end
+            isl = 2*tmp / obj.N^3;
         end
 
 
@@ -70,8 +87,10 @@ classdef MmApproach < handle
         end
 
         function PrintIsl(obj, c)
-            isl = obj.SimulateIsl(c); 
-            fprintf("ISL: %.2f dB\n", 10*log10(isl));
+            islSimu = obj.SimulateIsl(c); 
+            islDerived = obj.DeriveIsl(c);
+            fprintf("ISL (Simulative):  %.2f dB\n", 10*log10(islSimu));
+            fprintf("ISL (Theoretical): %.2f dB\n", 10*log10(islDerived));
         end
 
 
@@ -91,7 +110,19 @@ classdef MmApproach < handle
         end
 
         function Delta = PrecalcDelta(obj)
+            q(:,1) = 0:obj.Q-1;
+            Delta = zeros(obj.Q, obj.N*(obj.N-1)*(2*obj.N-1)/6);
 
+            i = 1;
+            for k = 1:obj.N-1
+                for n = 1:obj.N-k
+                    for m = 1:obj.N-k
+                        Delta(:,i) = Polynom(q, n+k) - Polynom(q,n) - ...
+                            (Polynom(q, m+k) - Polynom(q, m));
+                        i = i+1;
+                    end
+                end
+            end
         end
 
     
