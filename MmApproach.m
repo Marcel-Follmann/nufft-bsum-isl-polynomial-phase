@@ -17,6 +17,31 @@ classdef MmApproach < handle
             obj.Delta = obj.PrecalcDelta();
         end
 
+        function cNew = MmStep(obj, p, c)
+            c = c(:,1);
+            cNew = c;
+            q(:,1) = 0:obj.Q-1;
+            
+            cP = c(p==q);
+            deltaP = obj.Delta(p==q, :);
+
+            cConst(:,1) = c(p~=q);
+            deltaConst = obj.Delta(p~=q, :);
+
+            % LS Step
+            psi = cConst.' * deltaConst;
+            b = sum( cP*deltaP + sin(cP*deltaP + psi) , 2);
+            L = sum( deltaP.^2 , 2);
+            cP = b/L;
+
+            % Break condition and update
+            if isnan(cP) || abs(cP) == Inf
+                return
+            end            
+            cNew(p==q) = cP;
+            
+        end
+
         function x = SimulateSignal(obj, c)
             n(:,1) = 0:obj.N-1; 
             q(:,1) = 0:obj.Q-1;
@@ -44,7 +69,7 @@ classdef MmApproach < handle
         function isl = DeriveIsl(obj, c)
             phase = sum(c .* obj.Delta, 1);
             const = obj.N*(obj.N-1)/2;
-            tmp = const + 2*sum(cos(phase), 2, 'omitnan');
+            tmp = const + 2*sum(cos(phase), 2);
             isl = 2 * tmp / obj.N^3;
         end
 
@@ -102,7 +127,7 @@ classdef MmApproach < handle
 
         function Delta = PrecalcDelta(obj)
             q(:,1) = 0:obj.Q-1;
-            Delta = NaN + ones(obj.Q, obj.N*(obj.N-1)*(2*obj.N-1)/3);
+            Delta = NaN * ones(obj.Q, obj.N*(obj.N-1)*(obj.N-2)/6);
 
             i = 1;
             for k = 1:obj.N-1
