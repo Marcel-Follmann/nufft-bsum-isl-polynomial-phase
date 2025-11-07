@@ -39,12 +39,10 @@ classdef MmApproach < handle
             acfHalf = zeros(1, obj.N-1);
             for k = 1:obj.N-1
                 for n = 1:obj.N-k
-                    for iQ = 1:numel(q)
-                        phase = c(iQ) * (Polynom(q(iQ), n+k) - Polynom(q(iQ), n));
-                    end
+                    phase = sum(c .* obj.D(:, k, n), 1);
                     
                     acfHalf(k) = acfHalf(k) + ...
-                        exp(1j*sum(phase,1)) / obj.N;
+                        exp(1j*phase) / obj.N;
                 end
             end
 
