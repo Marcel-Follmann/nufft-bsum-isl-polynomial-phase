@@ -67,7 +67,7 @@ classdef Simulation < handle
 			
 			acfFull = xcorr(x);
 			acf = acfFull(obj.N:end);
-			isl = 2*sum( abs(acf(2:end)).^2 ./ obj.N^2);
+			isl = 2*sum( abs(acf(2:end)).^2 ./ obj.N^3);
 			isl_dB = 10*log10(isl);
 		end
 

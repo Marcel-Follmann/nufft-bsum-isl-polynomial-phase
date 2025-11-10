@@ -6,8 +6,8 @@ figures = {};
 
 %% Parameters
 maxIterations = 3;
-N = 100;
-Q = 3;
+N = 20;
+Q = 5;
 
 a0 = randn(Q,1);
 % a0 = [randn(3,1);zeros(Q-3,1)  ]; % Tends to produce better ISLs
@@ -35,8 +35,9 @@ xlabel("CD Iterations ($-$)");
 ylabel("ISL ($dB$)");
 grid on;
 
-fprintf("Initial ISL: %.2e\n", isl_dB(1));
-fprintf("CD ISL: %.2e\n", isl_dB(end));
+fprintf("Initial ISL: %.2f dB\n", isl_dB(1));
+fprintf("CD ISL: %.2f dB\n", isl_dB(end));
+fprintf("Improvement: %.2f dB\n", isl_dB(1) - isl_dB(end));
 
 %% Format Figures
 for iFigure = 1:numel(figures)

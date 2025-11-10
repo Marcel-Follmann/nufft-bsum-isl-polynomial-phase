@@ -37,7 +37,7 @@ end
 %% Optimization loop for chosen a_coeff [i.e. first, second or third a_coeff]
 paramLimitUpper = 1000;
 paramLimitLower = -1000;
-nParamVec = 10000;
+nParamVec = 1000;
 paramVec = linspace(paramLimitLower, paramLimitUpper, nParamVec);
 
 paramOptimized = paramInitial;
