@@ -23,20 +23,42 @@ classdef Simulation < handle
 		end
 
 		%%
-		function a = CoordinateDescent(obj, a0, options)
+		function a = CoordinateDescent(obj, a0)
 			arguments
 				obj 
 				a0 (:,1) double % Initial Parameters
-				options.fftOversampling (1,1) double {mustBePositive} = 1
             end
             fprintf("Start CD step. ");
 			a = a0;
 			
 			for p = 3:obj.Q
-				g = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
-                gShift = ifftshift(g);
-				G = ifft(gShift, options.fftOversampling*numel(g));
+				[g, d] = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
+                G = ifft(ifftshift(g), numel(g));
 				nG = numel(G);
+                % g(g<128) = 0;
+                dtest = d;
+                gtest = g; 
+
+                dtest(g == 0) = [];
+                gtest(g == 0) = [];
+
+                N = 2*nG, %numel(gtest);
+                atest = 0:1/N:1/2-1/N;
+                % atest = mod(atest + pi, 2*pi) - pi;
+
+                Gtest = nufft(gtest, dtest, atest) / nG;
+
+				
+
+                nexttile; hold on; 
+                plot(d, g, "DisplayName","FFT"); 
+                plot(dtest, gtest, "o", "DisplayName","NUFFT");
+                legend("Location","northeast");
+
+                nexttile; hold on; 
+                plot(0:1/nG:1-1/nG, abs(G), "DisplayName", "FFT");
+                plot(atest, abs(Gtest), "o", "DisplayName","NUFFT"); 
+                legend("Location","northeast")
 
 				[isl, k] = min(abs(G), [], "all");
                 if isl < obj.isl

@@ -1,4 +1,4 @@
-function g = G(a, p, deltaD, N, Q)
+function [g, d] = G(a, p, deltaD, N, Q)
 	arguments
 		a (:,1) double
 		p (1,1) double {mustBePositive} % Selected parameter a_p
@@ -13,7 +13,7 @@ function g = G(a, p, deltaD, N, Q)
 	d = dmin:dmax;
 	id_offset = 1 - dmin;
 
-	g = zeros(size(d));       
+	g = zeros(size(d));
 	for k = 1:N-1
 		for n = 1:N-k
 			for m = 1:N-k
@@ -30,5 +30,8 @@ function g = G(a, p, deltaD, N, Q)
 
 			end
 		end
-	end
+    end
+
+    % d(g == 0) = [];
+    % g(g == 0) = [];
 end
