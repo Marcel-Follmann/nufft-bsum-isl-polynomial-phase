@@ -33,37 +33,36 @@ classdef Simulation < handle
 			
 			for p = 3:obj.Q
 				[g, d] = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
-                G = ifft(ifftshift(g), numel(g));
-				nG = numel(G);
+                phiFft = ifft(ifftshift(g), numel(g));
+				nFft = numel(phiFft);
                 % g(g<128) = 0;
-                dtest = d;
-                gtest = g; 
+                dNufft = d;
+                gNufft = g; 
 
-                dtest(g == 0) = [];
-                gtest(g == 0) = [];
+                dNufft(abs(g) == 0) = [];
+                gNufft(abs(g) == 0) = [];
 
-                N = 2*nG, %numel(gtest);
-                atest = 0:1/N:1/2-1/N;
+                nNufft = 10*max(dNufft); %numel(gtest);
+                aNufft = 0:1/nNufft:1-1/nNufft;
                 % atest = mod(atest + pi, 2*pi) - pi;
 
-                Gtest = nufft(gtest, dtest, atest) / nG;
-
-				
+                phiNufft = nufft(gNufft, dNufft, aNufft) / nFft;
 
                 nexttile; hold on; 
-                plot(d, g, "DisplayName","FFT"); 
-                plot(dtest, gtest, "o", "DisplayName","NUFFT");
+                plot(d, 2*abs(g)/nFft, "DisplayName","FFT"); 
+                plot(dNufft, 2*abs(gNufft)/nFft, "o", "DisplayName","NUFFT");
                 legend("Location","northeast");
 
                 nexttile; hold on; 
-                plot(0:1/nG:1-1/nG, abs(G), "DisplayName", "FFT");
-                plot(atest, abs(Gtest), "o", "DisplayName","NUFFT"); 
+                plot(0:1/nFft:1-1/nFft, abs(phiFft), "DisplayName", "FFT");
+                plot(aNufft, abs(phiNufft), "o", "DisplayName","NUFFT"); 
                 legend("Location","northeast")
 
-				[isl, k] = min(abs(G), [], "all");
+
+				[isl, k] = min(abs(phiFft), [], "all");
                 if isl < obj.isl
                     obj.isl = isl;
-                    a(p) = obj.fftBin2parameterVaule(k,nG);
+                    a(p) = obj.fftBin2parameterVaule(k,nFft);
                     fprintf("+")
                 else
                     fprintf("*");
