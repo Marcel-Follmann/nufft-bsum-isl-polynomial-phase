@@ -33,6 +33,7 @@ classdef Simulation < handle
 			
 			for p = 3:obj.Q
 				[g, d] = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
+                g = g/(obj.N^2);
                 phiFft = ifft(ifftshift(g), numel(g));
 				nFft = numel(phiFft);
                 % g(g<128) = 0;
@@ -42,22 +43,23 @@ classdef Simulation < handle
                 dNufft(abs(g) == 0) = [];
                 gNufft(abs(g) == 0) = [];
 
-                nNufft = 10*max(dNufft); %numel(gtest);
-                aNufft = 0:1/nNufft:1-1/nNufft;
+                nNufft = 10*nFft;
+                aNufft = 0:1/nNufft:1/2-1/nNufft;
                 % atest = mod(atest + pi, 2*pi) - pi;
 
-                phiNufft = nufft(gNufft, dNufft, aNufft) / nFft;
+                phiNufft = nufft(flip(gNufft), dNufft, aNufft) / nFft;
 
                 nexttile; hold on; 
-                plot(d, 2*abs(g)/nFft, "DisplayName","FFT"); 
-                plot(dNufft, 2*abs(gNufft)/nFft, "o", "DisplayName","NUFFT");
+                plot(d, 2*abs(g), "DisplayName","FFT"); 
+                plot(dNufft, 2*abs(gNufft), ".", "DisplayName","NUFFT");
                 legend("Location","northeast");
 
                 nexttile; hold on; 
                 plot(0:1/nFft:1-1/nFft, abs(phiFft), "DisplayName", "FFT");
-                plot(aNufft, abs(phiNufft), "o", "DisplayName","NUFFT"); 
+                plot(aNufft, abs(phiNufft), ".", "DisplayName","NUFFT"); 
                 legend("Location","northeast")
 
+                fprintf("Energy: %.2e\n", sum(abs(g).^2));
 
 				[isl, k] = min(abs(phiFft), [], "all");
                 if isl < obj.isl
