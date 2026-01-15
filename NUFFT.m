@@ -47,8 +47,13 @@ classdef NUFFT < handle
         end
 
         function X_hat = interpolate(obj, omega)
-            indices(1,:) = mod(obj.k0(omega) + (1:obj.J),obj.K) + 1;
-            X_hat = obj.X(indices)*conj(obj.calculateInterpolators(omega));
+            arguments
+                obj 
+                omega (1,1,:) 
+            end
+            indices = mod(obj.k0(omega) + (1:obj.J),obj.K) + 1;
+            X_hat = pagemtimes(obj.X(indices),conj(obj.calculateInterpolators(omega)));
+            X_hat = reshape(X_hat, numel(omega),1);
         end
     end
 
@@ -65,13 +70,23 @@ classdef NUFFT < handle
         end
 
         function u = calculateInterpolators(obj,omega)
+            arguments
+                obj 
+                omega (1,1,:) 
+            end
             j(:,1) = 1:obj.J;
-            Lambda = diag([exp(-1i* ( omega - obj.gamma*(obj.k0(omega) + j) )*obj.eta0 )]);
+
+            tmp = exp(-1i* ( omega - obj.gamma*(obj.k0(omega) + j) )*obj.eta0 );
+            Lambda = zeros(obj.J, obj.J, numel(omega));
+            idx = 1:obj.J+1:obj.J^2;
+            ind = idx(:) + 36*(0:numel(omega)-1);
+            Lambda(ind) = reshape(tmp,6,numel(omega)); % Diagonalize
+
             mu = obj.K/obj.N;
 
             r = sinc(omega/obj.gamma - obj.k0(omega) - j);
 
-            u = Lambda*obj.T*r;
+            u = pagemtimes(pagemtimes(Lambda,obj.T),r);
         end
     end
 

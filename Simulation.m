@@ -34,24 +34,21 @@ classdef Simulation < handle
 			for p = 3:obj.Q
 				[g, d] = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
                 g = g/(obj.N^2);
+                nufft = NUFFT("x",g, "K",2*numel(g));
+                nufft.prepareInterpolator("J",6);
+
                 phiFft = ifft(ifftshift(g), numel(g));
 				nFft = numel(phiFft);
-                % g(g<128) = 0;
-                dNufft = d;
-                gNufft = g; 
 
-                dNufft(abs(g) == 0) = [];
-                gNufft(abs(g) == 0) = [];
 
-                nNufft = .010*nFft;
+                nNufft = nFft;
                 aNufft = 0:1/nFft:1/2-1/nNufft;
-                % atest = mod(atest + pi, 2*pi) - pi;
 
-                phiNufft = nufft(flip(gNufft), dNufft, aNufft) / nFft;
+                phiNufft = nufft.interpolate(aNufft*(2*pi))/nFft;
+
 
                 nexttile; hold on; 
                 plot(d, 2*abs(g), "DisplayName","FFT"); 
-                plot(dNufft, 2*abs(gNufft), ".", "DisplayName","NUFFT");
                 legend("Location","northeast");
 
                 nexttile; hold on; 

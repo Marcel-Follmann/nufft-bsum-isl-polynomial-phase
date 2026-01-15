@@ -29,8 +29,9 @@ tZeroPadding = 0:dt/fZeroPadding:T-dt/fZeroPadding;
 tw = tZeroPadding;%T*rand(nSamples,1);
 nufft = NUFFT("K",2*nSamples, "x",X);
 nufft.prepareInterpolator("J",6);
+Xw = nufft.interpolate(tw*2*pi);
 for i = 1:numel(tw)
-    Xw(i) = nufft.interpolate(tw(i)*2*pi);
+    
     e(i) = nufft.error(tw(i)*2*pi);
 end
 
