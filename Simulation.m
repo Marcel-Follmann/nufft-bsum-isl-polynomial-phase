@@ -43,8 +43,8 @@ classdef Simulation < handle
                 dNufft(abs(g) == 0) = [];
                 gNufft(abs(g) == 0) = [];
 
-                nNufft = 10*nFft;
-                aNufft = 0:1/nNufft:1/2-1/nNufft;
+                nNufft = .010*nFft;
+                aNufft = 0:1/nFft:1/2-1/nNufft;
                 % atest = mod(atest + pi, 2*pi) - pi;
 
                 phiNufft = nufft(flip(gNufft), dNufft, aNufft) / nFft;
