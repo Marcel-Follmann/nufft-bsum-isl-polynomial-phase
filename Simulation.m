@@ -34,65 +34,53 @@ classdef Simulation < handle
 			for p = 3:obj.Q
 				[g, d] = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
                 
-                % g(d>0) = [];
-                % d(d>0) = [];
                 g = g/(obj.N^3);
                
-                E = sum(g.^2); 
-                g = g/sqrt(E);
+                E = sum(abs(g).^2); 
+                g = g/sqrt(E); 
 
-                nufft_f = NUFFT("x",g, "K",4*numel(g));
-                nufft_f2 = NUFFT("x",g, "K",10*numel(g));
-                nufft_df = NUFFT("x",1i*d.*g, "K",4*numel(g));
-                J = 10;
+                nufft_f = NUFFT("x",g, "K",2*numel(g));
+                nufft_df = NUFFT("x",1i*d.*g, "K",2*numel(g));
+
+                J = 6;
+
+                % Test Correctnes of the NUFFT for ISL
+                % plot(nufft_f.f, 10*log10(real(nufft_f.X)*sqrt(E)),'-', "DisplayName","NUFFT");
+                % for i = 1:numel(nufft_f.f)
+                %     a0(p) = 2*pi*nufft_f.f(i);
+                %     I(i) = obj.ComputeIsl_dB(a0);
+                % end
+                % hold on; 
+                % plot(nufft_f.f, (I), '--', "DisplayName","ISL Calc");
+                % legend("Location","best")
+                
+
                 nufft_f.prepareInterpolator("J",J);
                 nufft_df.prepareInterpolator("J",J);
 
-                % Find 5 minimas
-                [~, idx_a] = mink((nufft_f.X),20);
-                a_MM = real(nufft_f.f(idx_a));
-                phi = real(nufft_f.interpolate(a_MM*2*pi));
-                M = sum(d.^2.*g);
-                Iter = 1e2;
-                plot(nufft_f.f,10*log10(nufft_f.X*sqrt(E)), 'o', "DisplayName", 'Original FFT');hold on; 
-                % plot(nufft_f2.f,10*log10(nufft_f2.X*sqrt(E)), '--', "DisplayName", 'Zero padded FFT');
+                % Find x-1 minimas
+                [~, idx_a] = mink((nufft_f.X),29);
+
+                a_MM(:,1) = [a(p); real(2*pi*nufft_f.f(idx_a))];
+                phi(:,1) = real(nufft_f.interpolate(a_MM));
+
+                M = sum(abs(d.^2.*g));
+                Iter = 1e4;
                 for iter = 1:Iter
-                    a_MM(:,iter+1) = a_MM(:,iter) + (real(nufft_df.interpolate(a_MM(:,iter)*2*pi)) + real(nufft_df.error(a_MM(:,iter)*2*pi)))/(M);
-                    phi(:,iter+1) = real(nufft_f.interpolate(a_MM(:,iter+1)*2*pi));
-                    plot(a_MM(:,iter+1), 10*log10(phi(:,iter+1)*sqrt(E)), '.', "Color", iter/Iter*[1,0,0]); 
+                    a_MM(:,iter+1) = a_MM(:,iter) - (real(nufft_df.interpolate(a_MM(:,iter))) + real(nufft_df.error(a_MM(:,iter))))/(M);
+                    phi(:,iter+1) = sqrt(E) * real(nufft_f.interpolate(a_MM(:,iter+1)));
                 end
-                title("Red is newer")
-                
-                phiFft = fft(ifftshift(g), numel(g));
-				nFft = numel(phiFft);
+                % plot(a_MM(:,end)/(2*pi), 10*log10(phi(:,end)), 'o', "DisplayName","Optimized", "HandleVisibility","off");
 
-                close all; 
-
-                nNufft = nFft;
-                aNufft = 0:1/nFft:1/2-1/nNufft;
-
-                phiNufft = nufft_f.interpolate(aNufft*(2*pi));
-
-
-                nexttile; hold on; 
-                plot(d, 2*abs(g), "DisplayName","FFT"); 
-                legend("Location","northeast");
-
-                nexttile; hold on; 
-                plot(0:1/nFft:1-1/nFft, (phiFft), "DisplayName", "FFT");
-                plot(aNufft, (phiNufft), ".", "DisplayName","NUFFT"); 
-                legend("Location","northeast")
-
-                fprintf("Energy: %.2e\n", sum(abs(g).^2));
-
-				[isl, k] = min(abs(phiFft), [], "all");
+				[isl, k] = min(phi(:,end), [], "all");
                 if isl < obj.isl
                     obj.isl = isl;
-                    a(p) = obj.fftBin2parameterVaule(k,nFft);
+                    a(p) = a_MM(k,end);
                     fprintf("+")
                 else
                     fprintf("*");
                 end
+                clear a_MM phi
                 
 				
             end

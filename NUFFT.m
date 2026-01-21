@@ -9,7 +9,6 @@ classdef NUFFT < handle
         eta0 (1,1)
         Tinv
         C
-        S
         f
         E
     end
@@ -32,8 +31,8 @@ classdef NUFFT < handle
             obj.K = numel(x_padded);
             obj.gamma = 2*pi/obj.K;
 
-            obj.X = real(fft(ifftshift(x_padded)))/sqrt(obj.N);
-            obj.f(:,1) = 0:1/obj.K:1-1/obj.K;
+            obj.X = real(((ifft(ifftshift(x_padded)))))*obj.K;
+            obj.f = (0:1/obj.K:1-1/obj.K).';
         end
 
         function e = error(obj, omega)
@@ -52,7 +51,6 @@ classdef NUFFT < handle
                 options.J
             end
             obj.J = options.J;
-            obj.S = diag(ones(obj.N,1));
             n(:,1) = 0:(obj.N-1); 
             j(1,:) = 1:obj.J;
             obj.C = exp(1i*obj.gamma*(n-obj.eta0)*j)/sqrt(obj.N);

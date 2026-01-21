@@ -40,10 +40,10 @@ MaxIter = 1e4;
 tol = 1e-4;
 
 % Initialization
-N = 300;
-M = 10;
+N = 50;
+M = 1;
 L = round(N/M);
-Q = 5;
+Q = 3;
 fprintf('sequence length N = %d\n',N);
 FLG_RNDM_SUBSQNCE_LEN = false;
 
