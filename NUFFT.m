@@ -7,9 +7,11 @@ classdef NUFFT < handle
         gamma (1,1)
         J (1,1)
         eta0 (1,1)
-        T
+        Tinv
         C
         S
+        f
+        E
     end
 
     methods (Access = public)
@@ -20,15 +22,28 @@ classdef NUFFT < handle
             end
             obj.K = options.K;
             obj.N = numel(options.x);
-            obj.gamma = 2*pi/obj.K;
+            
             obj.eta0 = (obj.N-1)/2;
-            obj.X = fftshift(ifft(options.x, obj.K))*obj.K;
+            
+            obj.E = sum(options.x.^2);
+
+            pad = round((obj.K-obj.N)/2);
+            x_padded = [zeros(pad, 1); options.x; zeros(pad, 1)];
+            obj.K = numel(x_padded);
+            obj.gamma = 2*pi/obj.K;
+
+            obj.X = real(fft(ifftshift(x_padded)))/sqrt(obj.N);
+            obj.f(:,1) = 0:1/obj.K:1-1/obj.K;
         end
 
         function e = error(obj, omega)
-            j(:,1) = 1:obj.J;
-            r = sinc(omega/obj.gamma - obj.k0(omega) - j);
-            e = sqrt(1 - r.'*obj.T*r)*sqrt(obj.N);
+            arguments
+                obj 
+                omega (1,1,:) 
+            end
+            % Just compute the empirical worst case given in the paper
+            e = zeros(numel(omega), 1);
+            e(:,1) = sqrt(obj.N) * 0.75 * exp(-obj.J*( 0.29 + 1.03*log(obj.K/obj.N) ));
         end
 
         function prepareInterpolator(obj, options)
@@ -38,12 +53,12 @@ classdef NUFFT < handle
             end
             obj.J = options.J;
             obj.S = diag(ones(obj.N,1));
-            n(:,1) = 1:obj.N; 
+            n(:,1) = 0:(obj.N-1); 
             j(1,:) = 1:obj.J;
             obj.C = exp(1i*obj.gamma*(n-obj.eta0)*j)/sqrt(obj.N);
 
-            tmp = sinc(j-j.');
-            obj.T = inv(tmp);
+            kappa = j-j.';
+            obj.Tinv = obj.Dirichlet(kappa);
         end
 
         function X_hat = interpolate(obj, omega)
@@ -79,14 +94,28 @@ classdef NUFFT < handle
             tmp = exp(-1i* ( omega - obj.gamma*(obj.k0(omega) + j) )*obj.eta0 );
             Lambda = zeros(obj.J, obj.J, numel(omega));
             idx = 1:obj.J+1:obj.J^2;
-            ind = idx(:) + 36*(0:numel(omega)-1);
-            Lambda(ind) = reshape(tmp,6,numel(omega)); % Diagonalize
+            ind = idx(:) + obj.J^2*(0:numel(omega)-1);
+            Lambda(ind) = reshape(tmp,obj.J,numel(omega)); % Diagonalize
 
+
+
+            kappa = omega/obj.gamma - obj.k0(omega) - j;
+            r = obj.Dirichlet(kappa);
+
+            u = pagemtimes( pagectranspose(Lambda) , pagemldivide( obj.Tinv , r) );
+        end
+
+        function y = Dirichlet(obj, kappa)
             mu = obj.K/obj.N;
-
-            r = sinc(omega/obj.gamma - obj.k0(omega) - j);
-
-            u = pagemtimes(pagemtimes(Lambda,obj.T),r);
+            if obj.J >= 10-mu
+                % fprintf("Use Large N approximation\n");
+                y = sinc(kappa/mu);
+            else
+                y = 1/obj.N * sin(pi*kappa*obj.N/obj.K)./sin(pi*kappa/obj.K);
+                t = kappa/obj.K;
+                mask = abs(t - round(t)) < 10*eps(class(t));
+                y(mask) = 1;
+            end
         end
     end
 

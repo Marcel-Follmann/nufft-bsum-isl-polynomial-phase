@@ -7,7 +7,7 @@ figures = {};
 %% Parameters
 maxIterations = 3;
 N = 20;
-Q = 4;
+Q = 3;
 
 a0 = randn(Q,1);
 % a0 = [randn(3,1);zeros(Q-3,1)  ]; % Tends to produce better ISLs

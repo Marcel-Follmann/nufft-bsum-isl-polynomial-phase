@@ -33,18 +33,45 @@ classdef Simulation < handle
 			
 			for p = 3:obj.Q
 				[g, d] = eqn.G(a, p, obj.deltaD, obj.N, obj.Q);
-                g = g/(obj.N^2);
-                nufft = NUFFT("x",g, "K",2*numel(g));
-                nufft.prepareInterpolator("J",6);
+                
+                % g(d>0) = [];
+                % d(d>0) = [];
+                g = g/(obj.N^3);
+               
+                E = sum(g.^2); 
+                g = g/sqrt(E);
 
-                phiFft = ifft(ifftshift(g), numel(g));
+                nufft_f = NUFFT("x",g, "K",4*numel(g));
+                nufft_f2 = NUFFT("x",g, "K",10*numel(g));
+                nufft_df = NUFFT("x",1i*d.*g, "K",4*numel(g));
+                J = 10;
+                nufft_f.prepareInterpolator("J",J);
+                nufft_df.prepareInterpolator("J",J);
+
+                % Find 5 minimas
+                [~, idx_a] = mink((nufft_f.X),20);
+                a_MM = real(nufft_f.f(idx_a));
+                phi = real(nufft_f.interpolate(a_MM*2*pi));
+                M = sum(d.^2.*g);
+                Iter = 1e2;
+                plot(nufft_f.f,10*log10(nufft_f.X*sqrt(E)), 'o', "DisplayName", 'Original FFT');hold on; 
+                % plot(nufft_f2.f,10*log10(nufft_f2.X*sqrt(E)), '--', "DisplayName", 'Zero padded FFT');
+                for iter = 1:Iter
+                    a_MM(:,iter+1) = a_MM(:,iter) + (real(nufft_df.interpolate(a_MM(:,iter)*2*pi)) + real(nufft_df.error(a_MM(:,iter)*2*pi)))/(M);
+                    phi(:,iter+1) = real(nufft_f.interpolate(a_MM(:,iter+1)*2*pi));
+                    plot(a_MM(:,iter+1), 10*log10(phi(:,iter+1)*sqrt(E)), '.', "Color", iter/Iter*[1,0,0]); 
+                end
+                title("Red is newer")
+                
+                phiFft = fft(ifftshift(g), numel(g));
 				nFft = numel(phiFft);
 
+                close all; 
 
                 nNufft = nFft;
                 aNufft = 0:1/nFft:1/2-1/nNufft;
 
-                phiNufft = nufft.interpolate(aNufft*(2*pi))/nFft;
+                phiNufft = nufft_f.interpolate(aNufft*(2*pi));
 
 
                 nexttile; hold on; 
@@ -52,8 +79,8 @@ classdef Simulation < handle
                 legend("Location","northeast");
 
                 nexttile; hold on; 
-                plot(0:1/nFft:1-1/nFft, abs(phiFft), "DisplayName", "FFT");
-                plot(aNufft, abs(phiNufft), ".", "DisplayName","NUFFT"); 
+                plot(0:1/nFft:1-1/nFft, (phiFft), "DisplayName", "FFT");
+                plot(aNufft, (phiNufft), ".", "DisplayName","NUFFT"); 
                 legend("Location","northeast")
 
                 fprintf("Energy: %.2e\n", sum(abs(g).^2));
