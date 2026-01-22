@@ -2,17 +2,14 @@ clc;clear;close all;
 
 % Parmeters
 MaxIter = 1e4;
-tol = 1e-4;
 
 % Initialization
-N = 50;
-M = 1;
-L = 1;
-Q = 3;
-p = 2;
+nSamples = 50;
+polyOrder = 3;
+pthNorm = 2;
 
-[x_seed, a] = rndmSqnce_phaseEstmt(N, Q);
-[x_PSL, obj_hist, PSL_hist, ISL_hist,infm] = MPSL_PECS(x_seed, N, Q, a, p);
+[x0, params] = rndmSqnce_phaseEstmt(nSamples, polyOrder);
+[x_PSL, obj_hist, PSL_hist, ISL_hist] = MPSL_PECS(x0, nSamples, polyOrder, params, pthNorm);
 
 
 figure("Name", "PSL Convergence");box on; hold on;
@@ -31,26 +28,26 @@ xlabel('iteration')
 ylabel('pth Norm - rk')
 
 % ------------------- Correlation Plot ----------------------------
-chk = xcorr(x_seed);
-chkPly = 20*log10(abs(chk./chk(N)));
+chk = xcorr(x0)/nSamples;
+chkPly = 20*log10(abs(chk));
 
 ac_MM_ply = xcorr(x_PSL);
-corrPS = 20*log10(abs(ac_MM_ply./ac_MM_ply(N)));
+corrPS = 20*log10(abs(ac_MM_ply./ac_MM_ply(nSamples)));
 
 figure("Name","Correlation"); hold on;
-plot(1-N:N-1,chkPly, 'linewidth',1.5);
-plot(1-N:N-1,corrPS,  'LineWidth',1.5);
+plot(1-nSamples:nSamples-1,chkPly, 'linewidth',1.5);
+plot(1-nSamples:nSamples-1,corrPS,  'LineWidth',1.5);
 ylim([-60, 1]);
 xlabel('k')
 ylabel('correlation level (dB)')
 legend('Seed Sqnce','PECS - PS')
 
 % --------------------- Phase Plot -------------------------------
-argX_ply = unwrap(atan2(imag(x_seed),real(x_seed)));
+argX_ply = unwrap(atan2(imag(x0),real(x0)));
 argPly_PS = unwrap(atan2(imag(x_PSL),real(x_PSL)));
 
 figure("Name","Phase"); box on; hold on; 
-indx = 1:N;
+indx = 1:nSamples;
 plot(indx, argPly_PS, '-.o', 'linewidth', 1.5);
 xlabel('Code length');ylabel('Phase');
 hold off;
@@ -61,11 +58,11 @@ plot(fIndx, fftshift(20*log10(abs(fft(x_PSL,nFFT))/nFFT)),'linewidth',2);
 xlabel('Normalized Frequency'); ylabel('Power [dB]');
 
 mCode = PhaseCodeType.Golomb;
-x_glmb = mCode.generate(N);
+x_glmb = mCode.generate(nSamples);
 [~,isl_glmb] = pslisl(x_glmb);
-fprintf('ISL of Golomb sequence for length N -> %d : %f\n',N, 10*log10(isl_glmb));
+fprintf('ISL of Golomb sequence for length N -> %d : %f\n',nSamples, 10*log10(isl_glmb));
 [~,isl_x_PSL] = pslisl(x_PSL);
-fprintf('ISL of the optimized sequence for length N -> %d : %f\n',N, 10*log10(isl_x_PSL));
+fprintf('ISL of the optimized sequence for length N -> %d : %f\n',nSamples, 10*log10(isl_x_PSL));
 
 % ------------------- Ambig Fn Plot ---------------------------
 AmbigFn_heat(x_PSL);
@@ -73,97 +70,80 @@ AmbigFn_heat(x_PSL);
 
 %% ========================= * ==========================
 % Lp Norm increment with increasing iterations
-function [x_PSL,obj_PSL,PSL, ISL, infm] = MPSL_PECS(x0, N, Q, a, p, options)
+function [x,objVec,pslVec_dB, islVec_dB] = MPSL_PECS(x0, nSamples, polyOrder, params, pthNorm, options)
     arguments
         x0 
-        N
-        Q
-        a
-        p
+        nSamples
+        polyOrder
+        params
+        pthNorm
         options.MaxIter = 1e4
     end
-    %%%%%%%% Output %%%%%%%%%%%
-    % x_PSL : output sequence
-    % num_iter: number of iterations
-    % obj_PSL: objective values (p-norm) at each iteration
-    % PSL: PSL value at each iteration
 
+    objVec = NaN * ones(options.MaxIter,1);
+    pslVec_dB = NaN * ones(options.MaxIter,1);
+    islVec_dB = NaN * ones(options.MaxIter,1);
+
+    r = abs(xcorr(x0)/nSamples);
+    objVec(1) = norm(r(1:nSamples),pthNorm);
+    [pslVec_dB(1), islVec_dB(1)] = pslisl(x0, "isLogScale", true);
+    
     x = x0;
-    obj = [];
-    PSL = [];
-    ISL = [];
-    f = fft(x,2*N);             % 2N point FFT of x
-    r = ifft(abs(f).^2);        % r = [r0,r1,...,r_N-1,0,r_1-N,...,r_-1]
-    r_abs = abs(r(2:N));
-    obj(end+1) = norm(r_abs,p);
-    PSL(end+1) = 20*log10(max(r_abs));
-    
-    for iter = 1:options.MaxIter
-        xU = MPSL_update(x,p,N);
-        % ------------------ PECS start ----------------------------
-        [yF, a] = PECS_PerfSqr(xU, a, N, Q);
-        argY = angle(yF);
-        x1 = exp(1j*argY);
-        % ------------------ PECS end ----------------------------
-        x_fft = fft(x1,2*N); 
-        rk = ifft(abs(x_fft).^2); 
-        r_abs = abs(rk(2:N)); 
-        obj3 = norm(r_abs,p);
-        x = x1;
+    for iter = 1:options.MaxIter-1
+        % Optimize
+        xU = MPSL_update(x,pthNorm,nSamples);
+        [x, params] = PECS_PerfSqr(xU, params, nSamples, polyOrder);
 
-        obj(end+1) = obj3;
-        PSL(end+1) = 20*log10(max(r_abs));
-        [~,isl] = pslisl(x); 
-        ISL(end+1)=20*log10(isl);
-    end
-    x_PSL = x;
-    obj_PSL = obj;
-    
-    infm.actlItrns = iter;
+        % Eval
+        r = abs(xcorr(x)/nSamples);
+        objVec(iter+1) = norm(r(1:nSamples),pthNorm);
+        [pslVec_dB(iter+1),islVec_dB(iter+1)] = pslisl(x, "isLogScale", true); 
+    end  
 end
 
 %% PSL Minimization
-function [x_update] = MPSL_update(x,p,N)
+function [x_update] = MPSL_update(x,pthNorm,nSamples)
     % One step update of MPSL_eig
-    f = fft(x,2*N);
+    f = fft(x,2*nSamples);
     r = ifft(abs(f).^2); % r = [r0,r1,...,r_N-1,0,r_1-N,...,r_-1]
-    r_abs = abs(r(2:N));
-    t = norm(r_abs,p)+1e-5;
+    r_abs = abs(r(2:nSamples));
+    
+    t = norm(r_abs,pthNorm)+1e-5;
     % normalized version (normalize by t^p to avoid numerical issue)
     r_t_ratio = r_abs/t;
-    a = (1 + (p-1)*r_t_ratio.^p - p*r_t_ratio.^(p-1))./(t-r_abs).^2;
-    w = 0.5*p/t^2*r_t_ratio.^(p-2);
+    a = (1 + (pthNorm-1)*r_t_ratio.^pthNorm - pthNorm*r_t_ratio.^(pthNorm-1))./(t-r_abs).^2;
+    w = 0.5*pthNorm/t^2*r_t_ratio.^(pthNorm-2);
     
-    lambda_max_L = max([N-1:-1:1]'.*a); % the maximum eigenvalue of L
+    lambda_max_L = max((nSamples-1:-1:1)'.*a); % the maximum eigenvalue of L
     
-    c = [0;w;0;w(N-1:-1:1)].*r;
+    c = [0;w;0;w(nSamples-1:-1:1)].*r;
     mu = real(fft(c));
     lambda_u = 0.5*(max(mu(1:2:end))+max(mu(2:2:end)));
     
     y = ifft(mu.*f); % the fator 1/2N is implicitly included
     
-    x_update = (N*lambda_max_L + lambda_u)*x - y(1:N);
+    x_update = (nSamples*lambda_max_L + lambda_u)*x - y(1:nSamples);
 end
 
 %% PECS - Perfect Square Implementation
-function [z, a] = PECS_PerfSqr(y, a, N, Q)
+function [z, params] = PECS_PerfSqr(y, params, nSamples, polyOrder)
     
     z = [];
-    psi = unwrap(atan2(imag(y),real(y)));
+    psi = angle(y);
     r = abs(y);
 
     indx_e = 0;
     indx_s = indx_e+1;
-    indx_e = indx_s + N-1;
+    indx_e = indx_s + nSamples-1;
 
     psi_M = psi(indx_s:indx_e);
     r_M   = r(indx_s:indx_e);
 
-    m = 1:N; m = m(:);
+    m = 1:nSamples; m = m(:);
 
     arg_init = 0;
-    for q = 1:Q
-        arg_init = arg_init + a(q).*(m.^(q-1));
+    for q = 1:polyOrder
+        arg_init = arg_init + params(q).*(m.^(q-1));
     end
 
     theta = arg_init - psi_M;
@@ -174,17 +154,17 @@ function [z, a] = PECS_PerfSqr(y, a, N, Q)
     bm = r_M .* sin(theta);
     beta = - 2 * am .* psi_M - 2 * am .* theta + bm;
     alpha = [];
-    for q = 0 : Q-1
-        alpha = [alpha, 2 *  am .* ((1:N).').^q];
+    for q = 0 : polyOrder-1
+        alpha = [alpha, 2 *  am .* ((1:nSamples).').^q];
     end
 
-    [a, ~] = lsqr(alpha,-beta, 1e-3);
+    [params, ~] = lsqr(alpha,-beta, 1e-3);
 
     % =========== Taylor subroutine ends ===============
 
     arg_opt = 0;
-    for q = 1:Q
-        arg_opt =  arg_opt + a(q).*(m.^(q-1));
+    for q = 1:polyOrder
+        arg_opt =  arg_opt + params(q).*(m.^(q-1));
     end
     x_j = exp(1j*arg_opt);
 
@@ -194,50 +174,40 @@ end
 
 
 
-function [ psl,isl,PSLRdB,ISLRdB ] = pslisl( x , nF , pF )
+function [ psl,isl ] = pslisl( x , options )
     % This function calculates PSL and ISL for a radar transmit sequence 
-    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    % Input: 
-    %           x       : sequence
-    %           nF      : normalization flag, default n = 0 
-    %           pF      : pF = 1 -> calculating "Periodic" PSL and ISL,
-    %                     otherwise, calculating "Aperiodic" PSL and ISL,
-    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    % Output: 
-    %           psl     : calculated PSL value
-    %           isl     : calculated ISL value
-    %           PSLRdB  : calculated PSLR (dB) value
-    %           ISLRdB  : calculated ISLR (dB) value
-    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    % The input parameters can be chosed as follows:
-    if nargin == 1
-        nF      = 0;
-        pF      = 0; 
-    elseif nargin <= 2
-       pF       = 0; 
+    arguments
+        x 
+        options.isNormalized = false
+        options.isAperiodic = true
+        options.isLogScale = false
     end
-    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     x           = x(:);
     N           = length(x);   
-    if pF == 0
-        r       = abs(xcorr(x));
+
+    if options.isAperiodic
+        x       = abs(xcorr(x));
     else
-        r       = abs(pcorr(x));
+        x       = abs(pcorr(x));
     end
-    if nF == 1
-        r       = r / max(r);
+
+    if options.isNormalized
+        x       = x / max(x);
     end
-    psl         = max(r(1:N-1));
-    isl         = sum(r(1:N-1).^2);
+
+    psl         = max(x(1:N-1));
+    isl         = sum(x(1:N-1).^2);
     
-    PSLRdB      = 10*log10(psl^2/N^2);
-    ISLRdB      = 10*log10(isl/N^2);
+    if options.isLogScale
+        psl      = 10*log10(psl^2/N^2);
+        isl      = 10*log10(isl/N^2);
+    end
 end
 
 
 
-function [x, a_ql] = rndmSqnce_phaseEstmt(N, Q)
+function [x, a_ql] = rndmSqnce_phaseEstmt(nSamples, polyOrder)
     % This function is designed to keep variable sub-sequence length - M
     % only choice required is No of sub-sequences - L, minimum sub-sequence length - M_min, Q, sequence length - N   
     rng 'shuffle'
@@ -245,37 +215,37 @@ function [x, a_ql] = rndmSqnce_phaseEstmt(N, Q)
     z = [];
     
     mCode = PhaseCodeType.Random;
-    y = mCode.generate(N);
+    y = mCode.generate(nSamples);
     
     psi = angle(y);
-    a = 10*rand(Q,1);
+    a = 10*rand(polyOrder,1);
     indx_e = 0;
         
-    m = 1:N; m = m(:);
+    m = 1:nSamples; m = m(:);
     indx_s = indx_e+1;
-    indx_e = indx_s + N-1;
+    indx_e = indx_s + nSamples-1;
     
     psi_M = psi(indx_s:indx_e);
 
     arg_init = 0;
     m_s = [ones(size(m))];
-    for q = 1:Q
+    for q = 1:polyOrder
         arg_init = arg_init + a(q)*m.^(q-1);
     end
     
-    for q = 2:Q
+    for q = 2:polyOrder
         m_s = [m.^(q-1), m_s];
     end
     
     A_ls = m_s;
     [vrbl,~] = lsqr(A_ls, psi_M);
     
-    for q =1:Q
-        a(Q+1-q) = vrbl(q);
+    for q =1:polyOrder
+        a(polyOrder+1-q) = vrbl(q);
     end
     
     arg_opt = 0;
-    for q = 1:Q
+    for q = 1:polyOrder
         arg_opt =  arg_opt + a(q)*m.^(q-1);
     end
     x_j = exp(1j*arg_opt);
