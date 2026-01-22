@@ -5,7 +5,7 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 figures = {};
 
 %% Parameters
-maxIterations = 1;
+maxIterations = 3;
 N = 50;
 Q = 3;
 
@@ -22,7 +22,7 @@ a(:,1) = a0;
 isl_dB(1) = simulation.ComputeIsl_dB(a(:,1));
 for i = 1:maxIterations
 	a(:,i+1) = simulation.CoordinateDescent(a(:,i));
-	isl_dB(i+1) = simulation.ComputeIsl_dB(a(:,i));
+	isl_dB(i+1) = simulation.ComputeIsl_dB(a(:,i+1));
 end
 lags = -(N-1):N-1;
 y0 = xcorr(Signal(a0, N))/N;
@@ -30,7 +30,7 @@ y = xcorr(Signal(a(:,end),N))/N;
 
 %% Plot
 figures{end+1} = figure("Name", "Convergence");
-semilogx(0:maxIterations,isl_dB, ...
+plot(0:maxIterations,isl_dB, ...
 	'-o', "DisplayName", "ISL");
 xlabel("CD Iterations ($-$)");
 ylabel("ISL ($dB$)");
