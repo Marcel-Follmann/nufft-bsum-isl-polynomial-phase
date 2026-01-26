@@ -1,10 +1,8 @@
 classdef PECS < handle
 
     properties
-        N
-        Q
-        M
-        L
+        nSamples
+        nPolyOrder
         pNorm
         tol
         nMaxIters
@@ -19,27 +17,40 @@ classdef PECS < handle
             arguments
                 params.N
                 params.Q
-                params.M = 1
                 params.pNorm = 2
                 params.tol = 1e-4
                 params.nMaxIters = 1e4
             end
 
-            obj.N = params.N;
-            obj.Q = params.Q;
-            obj.M = params.M;
-            obj.L = round(obj.N/obj.M); 
+            obj.nSamples = params.N;
+            obj.nPolyOrder = params.Q;
             obj.pNorm = params.pNorm;
             obj.tol = params.tol; 
             obj.nMaxIters = params.nMaxIters;
 
         end
 
-        function [x, refVec, a_ql] = randomSequencePhaseEstimation(nSamples, L, M_min, Q, isRandomSubsequenceLength)
+        function [x0, a0] = getRandomSequence(obj)
+            rng "shuffle";
+            z = []
+
             mCode = PhaseCodeType.Random;
-            signal = mCode.generate(N);
+            signal = mCode.generate(obj.nSamples);
             phase = angle(signal);
 
+            a = rand(obj.nPolyOrder, 1);
+            m(:,1) = 1:obj.nSamples;
+
+
+        end
+
+        function mpsl(obj, x0, a0, options)
+            arguments
+                obj 
+                x0 
+                a0 
+                options.logIsActive (1,1) bool = false 
+            end
 
         end
     end

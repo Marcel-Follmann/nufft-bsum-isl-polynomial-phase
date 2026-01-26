@@ -4,13 +4,14 @@ clc;clear;close all;
 MaxIter = 1e4;
 
 % Initialization
-nSamples = 50;
-polyOrder = 3;
+nSamples = 100;
+polyOrder = 4;
 pthNorm = 2;
 
+tic;
 [x0, params] = rndmSqnce_phaseEstmt(nSamples, polyOrder);
 [x_PSL, obj_hist, PSL_hist, ISL_hist] = MPSL_PECS(x0, nSamples, polyOrder, params, pthNorm);
-
+toc;
 
 figure("Name", "PSL Convergence");box on; hold on;
 plot(0:2:length(PSL_hist)-1,PSL_hist(1:2:end),'linewidth',2);
@@ -211,28 +212,17 @@ function [x, a_ql] = rndmSqnce_phaseEstmt(nSamples, polyOrder)
     % This function is designed to keep variable sub-sequence length - M
     % only choice required is No of sub-sequences - L, minimum sub-sequence length - M_min, Q, sequence length - N   
     rng 'shuffle'
-    
-    z = [];
-    
+        
     mCode = PhaseCodeType.Random;
     y = mCode.generate(nSamples);
     
     psi = angle(y);
     a = 10*rand(polyOrder,1);
-    indx_e = 0;
         
-    m = 1:nSamples; m = m(:);
-    indx_s = indx_e+1;
-    indx_e = indx_s + nSamples-1;
-    
-    psi_M = psi(indx_s:indx_e);
+    m(:,1) = 1:nSamples;
+    psi_M = psi(1:nSamples);
 
-    arg_init = 0;
     m_s = [ones(size(m))];
-    for q = 1:polyOrder
-        arg_init = arg_init + a(q)*m.^(q-1);
-    end
-    
     for q = 2:polyOrder
         m_s = [m.^(q-1), m_s];
     end
@@ -248,10 +238,7 @@ function [x, a_ql] = rndmSqnce_phaseEstmt(nSamples, polyOrder)
     for q = 1:polyOrder
         arg_opt =  arg_opt + a(q)*m.^(q-1);
     end
-    x_j = exp(1j*arg_opt);
-    z = [z; x_j];
-
-    x = z; 
+    x = exp(1j*arg_opt);
     a_ql = a;
 end
 
