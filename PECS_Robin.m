@@ -9,7 +9,7 @@ polyOrder = 4;
 pthNorm = 2;
 
 tic;
-[x0, params] = rndmSqnce_phaseEstmt(nSamples, polyOrder);
+[x0, params] = GenerateInitialSequence(nSamples, polyOrder);
 [x_PSL, obj_hist, PSL_hist, ISL_hist] = MPSL_PECS(x0, nSamples, polyOrder, params, pthNorm);
 toc;
 
@@ -126,46 +126,60 @@ function [x_update] = MPSL_update(x,pthNorm,nSamples)
     x_update = (nSamples*lambda_max_L + lambda_u)*x - y(1:nSamples);
 end
 
-%% PECS - Perfect Square Implementation
-function [z, params] = PECS_PerfSqr(y, params, nSamples, polyOrder)
-    
-    z = [];
-    psi = angle(y);
-    r = abs(y);
+function r = computeAcf(x,options)
+    arguments
+        x 
+        options.isAperiodic = true
+    end
+    nSamples = numel(x); 
 
-    indx_e = 0;
-    indx_s = indx_e+1;
-    indx_e = indx_s + nSamples-1;
-
-    psi_M = psi(indx_s:indx_e);
-    r_M   = r(indx_s:indx_e);
-
-    m = 1:nSamples; m = m(:);
-
-    arg_init = 0;
-    for q = 1:polyOrder
-        arg_init = arg_init + params(q).*(m.^(q-1));
+    if options.isAperiodic
+        nFft = 2*nSamples;
+    else
+        nFft = nSamples;
     end
 
-    theta = arg_init - psi_M;
+    f = fft(x, nFft);
+    tmp = ifft(abs(f).^2);
+    r = abs(tmp(2:nSamples));
+end
+
+%% PECS - Perfect Square Implementation
+function [z, a] = PECS_PerfSqr(y, a, nSamples, nPolyOrder)
+    arguments
+        y (:,1)
+        a (:,1)
+        nSamples (1,1)
+        nPolyOrder (1,1)
+    end
+    
+    z = [];
+    phaseReference = angle(y);
+    r = abs(y);
+    vSamples(:,1) = 1:nSamples; 
+
+    V = vSamples .^(0:nPolyOrder-1); % Vandermonde
+
+    phaseModel = V * a;
+    phaseError = phaseModel - phaseReference;
 
     % =========== Taylor subroutine starts ================
 
-    am = r_M / 2 .* cos(theta);
-    bm = r_M .* sin(theta);
-    beta = - 2 * am .* psi_M - 2 * am .* theta + bm;
-    alpha = [];
-    for q = 0 : polyOrder-1
-        alpha = [alpha, 2 *  am .* ((1:nSamples).').^q];
+    wCos = r / 2 .* cos(phaseError);
+    wSin = r .* sin(phaseError);
+    b = - 2 * wCos .* phaseReference - 2 * wCos .* phaseError + wSin;
+    A = [];
+    for q = 0 : nPolyOrder-1
+        A = [A, 2 *  wCos .* vSamples.^q];
     end
 
-    [params, ~] = lsqr(alpha,-beta, 1e-3);
+    [a, ~] = lsqr(A,-b, 1e-3);
 
     % =========== Taylor subroutine ends ===============
 
     arg_opt = 0;
-    for q = 1:polyOrder
-        arg_opt =  arg_opt + params(q).*(m.^(q-1));
+    for q = 1:nPolyOrder
+        arg_opt =  arg_opt + a(q).*(vSamples.^(q-1));
     end
     x_j = exp(1j*arg_opt);
 
@@ -208,38 +222,27 @@ end
 
 
 
-function [x, a_ql] = rndmSqnce_phaseEstmt(nSamples, polyOrder)
-    % This function is designed to keep variable sub-sequence length - M
-    % only choice required is No of sub-sequences - L, minimum sub-sequence length - M_min, Q, sequence length - N   
+function [x, a] = GenerateInitialSequence(nSamples, polyOrder)
+    % Model Initial Sequence according to some Code
     rng 'shuffle'
         
     mCode = PhaseCodeType.Random;
     y = mCode.generate(nSamples);
     
-    psi = angle(y);
-    a = 10*rand(polyOrder,1);
-        
-    m(:,1) = 1:nSamples;
-    psi_M = psi(1:nSamples);
+    phaseReference = angle(y);     
+    vSamples(:,1) = 1:nSamples;
 
-    m_s = [ones(size(m))];
-    for q = 2:polyOrder
-        m_s = [m.^(q-1), m_s];
-    end
-    
-    A_ls = m_s;
-    [vrbl,~] = lsqr(A_ls, psi_M);
-    
-    for q =1:polyOrder
-        a(polyOrder+1-q) = vrbl(q);
-    end
-    
-    arg_opt = 0;
+    polynomialModel = zeros(nSamples, polyOrder);
     for q = 1:polyOrder
-        arg_opt =  arg_opt + a(q)*m.^(q-1);
+        polynomialModel(:,q) = vSamples.^(q-1);
     end
-    x = exp(1j*arg_opt);
-    a_ql = a;
+    [a,~] = lsqr(polynomialModel, phaseReference);
+    
+    phase = 0;
+    for q = 1:polyOrder
+        phase =  phase + a(q)*vSamples.^(q-1);
+    end
+    x = exp(1j*phase);
 end
 
 function AmbigFn_heat(uinput)
