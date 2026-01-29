@@ -41,8 +41,14 @@ classdef NUFFT < handle
                 omega (1,1,:) 
             end
             % Just compute the empirical worst case given in the paper
-            e = zeros(numel(omega), 1);
-            e(:,1) = sqrt(obj.N) * 0.75 * exp(-obj.J*( 0.29 + 1.03*log(obj.K/obj.N) ));
+
+            j(:,1) = 1:obj.J;
+            kappa = omega/obj.gamma - obj.k0(omega) - j;
+            r = obj.Dirichlet(kappa);
+            e(:,1) = sqrt(obj.N) * sqrt(1 - pagemtimes( pagectranspose(r) , pagemldivide( obj.Tinv , r) ));
+            e = real(e);
+            % e = zeros(numel(omega), 1);
+            % e(:,1) = sqrt(obj.N) * 0.75 * exp(-obj.J*( 0.29 + 1.03*log(obj.K/obj.N) ));
         end
 
         function prepareInterpolator(obj, options)
@@ -105,7 +111,7 @@ classdef NUFFT < handle
 
         function y = Dirichlet(obj, kappa)
             mu = obj.K/obj.N;
-            if obj.J >= 10-mu
+            if obj.J < 10-mu
                 % fprintf("Use Large N approximation\n");
                 y = sinc(kappa/mu);
             else

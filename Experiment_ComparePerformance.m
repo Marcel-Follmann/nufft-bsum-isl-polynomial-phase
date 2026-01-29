@@ -1,19 +1,24 @@
 close all; clearvars; clc; 
 
 addpath("01_Figures\");
+addpath("02_Data\");
 addpath("99_Utilities\utils\");
 
 figureHandler = FigureHandler("savePath","01_Figures\");
 figures = {};
 
 
-nSamples = 20;
+nSamples = 50;
 nPolyOrder = 3;
 
 
 pecs = PECS("N",nSamples, "Q",nPolyOrder, "logFile","pecsLog.mat");
+cdmm = CDMM("nr_samples",nSamples, "nr_params",nPolyOrder, "save_data",true, "file_name","cdmmLog", "max_mm_iters",1e3, "nr_candidates",30);
+
 [x0, a0] = pecs.getRandomSequence();
+a0 = mod(a0, 2*pi);
 pecs.mpsl(x0, a0);
+cdmm.simulate(a0);
 
 [~, islDb] = pecs.getIsl();
 
