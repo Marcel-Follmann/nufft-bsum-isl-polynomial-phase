@@ -10,11 +10,13 @@ classdef CDMM < handle
 		deltaD
 
         data_logger
-        save = @(varargin) [] % Initially NOP
-
+        log_descent    = @(varargin) [] % Initially NOP
+        log_mm_step    = @(varargin) [] % Initially NOP
+        save_all        = @(varargin) [] % Initially NOP
+            
         tmp_a_mm
-        tmp_p
-        tmp_iter_mm
+        tmp_nufft
+        tmp_a
 	end
 
 	methods
@@ -47,14 +49,12 @@ classdef CDMM < handle
             % Prepare data logger
             if params.save_data
                 obj.data_logger = matfile(params.file_location + "\" + params.file_name + ".mat", "Writable",true);
-                obj.save = @obj.update_log_file;
+                obj.log_descent = @obj.update_descent;
+                obj.log_mm_step = @obj.update_a_mm;
+                obj.save_all    = @obj.save_file;
 
                 % Prepare editable data
-                obj.data_logger.params          = params;
-                obj.data_logger.a               = zeros(obj.nr_params, 0);
-                obj.data_logger.coordinate      = zeros(1,0);
-                obj.data_logger.mm_step_count   = zeros(1,0);
-                obj.data_logger.a_mm            = zeros(obj.nr_candidates, 0);
+                obj.data_logger.params = params;
             end
 		end
 
@@ -64,8 +64,6 @@ classdef CDMM < handle
 				a (:,1) double 
             end
 			
-            obj.save(a);
-
             for i_cd = 1:obj.nr_cd_iters
 			    for p = 3:obj.nr_params
                     % Bring into DFT format
@@ -74,8 +72,8 @@ classdef CDMM < handle
                     smoothness  = sum( d.^2 .* abs(g) ); % M-Smooth Lipschwitz continuous
                    
                     % Rescaling
-                    energy  = sum( abs(g).^2 ); 
-                    g       = g / sqrt(energy); 
+                    % energy  = sum( abs(g).^2 ); 
+                    % g       = g / sqrt(energy); 
     
                     % NUFFT for ISL and dISL/da
                     nufft_f = NUFFT("x",g, "K",obj.oversampling*numel(g));
@@ -83,12 +81,15 @@ classdef CDMM < handle
     
                     nufft_df = NUFFT("x",1i*d.*g, "K",obj.oversampling*numel(g));
                     nufft_df.prepareInterpolator("J",obj.nr_neighbors);
+
+                    obj.log_descent(nufft_f, a, p, i_cd);
     
                     % Select multiple MM candidates
                     [~, idx_a] = findpeaks(- abs(nufft_f.X), "NPeaks", obj.nr_candidates-1, "SortStr","descend");
                     % [~, idx_a]  = mink( nufft_f.X , obj.nr_candidates-1 );
                     a_MM        = [ a(p) ; real(2*pi*nufft_f.f(idx_a)) ];
     
+                    obj.log_mm_step(a_MM, 0, p, i_cd);
                     % Majorize / Minimize
                     for i = 1:obj.max_mm_iters
                         tangent = real(nufft_df.interpolate(a_MM));
@@ -98,18 +99,19 @@ classdef CDMM < handle
                         % end
                         a_MM = a_MM - tangent/smoothness;
 
-                        obj.save(a_MM, p, i);
+                        obj.log_mm_step(a_MM, i, p, i_cd);
                     end
     
                     % Select final minima
-                    isl     = sqrt(energy) * real(nufft_f.interpolate(a_MM));
+                    isl     = real(nufft_f.interpolate(a_MM));
 				    [~, k]  = min(isl, [], "all");
                     a(p)    = a_MM(k);
-                    obj.save(a);
                     clear a_MM phi
                 end
             end
-            obj.save();
+
+            obj.log_descent(nufft_f, a, p, i_cd);
+            obj.save_all();
         end
 
 		function isl_dB = ComputeIsl_dB(obj,a)
@@ -133,36 +135,27 @@ classdef CDMM < handle
     end
 
     methods (Access=private)
-        function update_log_file(obj, a, p, iter_mm)
+        function update_a_mm(obj, a, i, p, i_cd)
             arguments
                 obj 
                 a       (:,1) double = NaN
+                i       (1,1) double = NaN
                 p       (1,1) double = NaN
-                iter_mm (1,1) double = NaN
+                i_cd    (1,1) double = NaN
             end
             
-            
-            if ~isnan(a)
-                if any([isnan(p), isnan(iter_mm)])
-                    obj.data_logger.a(:,end+1) = a;
-                    return;
-                end
-                obj.tmp_a_mm(:,end+1) = a;
-                obj.tmp_p(end+1) = p;
-                obj.tmp_iter_mm(end+1) = iter_mm;
-            end
+            obj.tmp_a_mm(:,i+1,p-2,i_cd) = a;
+        end
 
-            len = size(obj.tmp_a_mm,2);
-            if any([all([isnan(a); len > 0]); len > 99])
-                obj.data_logger.a_mm(:,(end+1):(end+len)) = obj.tmp_a_mm;
-                obj.data_logger.coordinate(:,(end+1):(end+len)) = obj.tmp_p;
-                obj.data_logger.mm_step_count(:,(end+1):(end+len)) = obj.tmp_iter_mm;
+        function update_descent(obj, nufft, a, p, i_cd)
+            obj.tmp_nufft{p-2, i_cd} = nufft;
+            obj.tmp_a(:, p-2, i_cd) = a;
+        end
 
-                obj.tmp_a_mm = [];
-                obj.tmp_p = [];
-                obj.tmp_iter_mm = [];
-                return;
-            end
+        function save_file(obj)
+            obj.data_logger.a_mm = obj.tmp_a_mm;
+            obj.data_logger.a = obj.tmp_a;
+            obj.data_logger.nufft = obj.tmp_nufft;
         end
     end
 end

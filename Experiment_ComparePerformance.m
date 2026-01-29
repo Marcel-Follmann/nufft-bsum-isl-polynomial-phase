@@ -8,12 +8,12 @@ figureHandler = FigureHandler("savePath","01_Figures\");
 figures = {};
 
 
-nSamples = 50;
-nPolyOrder = 3;
+nSamples = 100;
+nPolyOrder = 4;
 
 
 pecs = PECS("N",nSamples, "Q",nPolyOrder, "logFile","pecsLog.mat");
-cdmm = CDMM("nr_samples",nSamples, "nr_params",nPolyOrder, "save_data",true, "file_name","cdmmLog", "max_mm_iters",1e3, "nr_candidates",30);
+cdmm = CDMM("nr_samples",nSamples, "nr_params",nPolyOrder, "save_data",true, "file_name","cdmmLog", "max_mm_iters",1e3, "nr_candidates",5);
 
 [x0, a0] = pecs.getRandomSequence();
 a0 = mod(a0, 2*pi);
