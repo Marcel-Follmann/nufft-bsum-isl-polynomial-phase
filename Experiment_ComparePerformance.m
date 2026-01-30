@@ -7,8 +7,9 @@ addpath("99_Utilities\utils\");
 figureHandler = FigureHandler("savePath","01_Figures\");
 figures = {};
 
+rng("shuffle");
 
-nSamples = 100;
+nSamples = 20;
 nPolyOrder = 4;
 
 
@@ -18,7 +19,7 @@ cdmm = CDMM("nr_samples",nSamples, "nr_params",nPolyOrder, "save_data",true, "fi
 [x0, a0] = pecs.getRandomSequence();
 a0 = mod(a0, 2*pi);
 pecs.mpsl(x0, a0);
-cdmm.simulate(a0);
+cdmm.type2(a0);
 
 [~, islDb] = pecs.getIsl();
 

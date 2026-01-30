@@ -61,15 +61,8 @@ classdef PECS < handle
             xUpdate = obj.generateSignal(aUpdate);
         end
 
-        function [x0, a0] = getRandomSequence(obj, options)
+        function [x0, a0] = getRandomSequence(obj)
             % Generate a sequence with a random code reference
-            arguments
-                obj 
-                options.rngSeed = "shuffle" 
-            end
-
-            rng(options.rngSeed);
-
             mCode = PhaseCodeType.Random;
             signal = mCode.generate(obj.nSamples);
             phaseReference = angle(signal);

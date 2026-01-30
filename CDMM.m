@@ -24,11 +24,11 @@ classdef CDMM < handle
 			arguments
 				params.nr_samples       (1,1) double {mustBePositive}           % Sequence Length
 				params.nr_params        (1,1) double {mustBePositive}           % Number of Parameters
-                params.nr_neighbors     (1,1) double {mustBePositive}   = 6    % Number of neighbors to include for interpolation
+                params.nr_neighbors     (1,1) double {mustBePositive}   = 4    % Number of neighbors to include for interpolation
                 params.nr_candidates    (1,1) double {mustBePositive}   = 30    % Number of minima to pursue
                 params.max_mm_iters     (1,1) double {mustBePositive}   = 1e4   % Maximum number of MM steps
                 params.nr_cd_iterations (1,1) double {mustBePositive}   = 1     % Number of complete CD iterations
-                params.oversampling     (1,1) double {mustBePositive}   = 3     % Oversampling for NUFFT
+                params.oversampling     (1,1) double {mustBePositive}   = 5     % Oversampling for NUFFT
 
                 params.save_data        (1,1) logical                   = false
                 params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
@@ -58,7 +58,7 @@ classdef CDMM < handle
             end
 		end
 
-		function a = simulate(obj, a)
+		function a = type2(obj, a)
 			arguments
 				obj 
 				a (:,1) double 
@@ -98,7 +98,7 @@ classdef CDMM < handle
                         % a_MM = a_MM - (tangent + sign(tangent).*error)/smoothness;
                         % end
                         a_MM = a_MM - tangent/smoothness;
-
+                        a_MM = mod(a_MM, 2*pi);
                         obj.log_mm_step(a_MM, i, p, i_cd);
                     end
     

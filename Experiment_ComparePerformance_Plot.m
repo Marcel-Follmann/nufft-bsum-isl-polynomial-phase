@@ -20,7 +20,7 @@ isl_dB = get_isl(a, params);
 
 figures{end+1} = figure("Name", "ISL in Coordinate 1"); hold on; 
 plot(nufft{1,1}.f*2, 10*log10(nufft{1,1}.X), '.');
-plot(a_mm/pi, isl_dB);
+plot(a_mm/pi, isl_dB, '.');
 box on; grid on; 
 
 figures{end+1} = figure("Name", "Best ISL in Coordinate 1"); 
