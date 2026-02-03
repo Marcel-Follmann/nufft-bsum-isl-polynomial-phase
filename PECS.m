@@ -6,9 +6,8 @@ classdef PECS < handle
         pNorm
         tol
         nMaxIters
-        matObj
-        SaveData
-        tmp = []
+        
+        data_logger
     end
 
     properties (SetAccess = protected)
@@ -18,26 +17,26 @@ classdef PECS < handle
     methods
         function obj = PECS(params)
             arguments
-                params.N
-                params.Q
+                params.nr_samples
+                params.nr_params
                 params.pNorm = 2
                 params.tol = 1e-4
-                params.nMaxIters = 1e4
-                params.logFile (:,1) string = []
+                params.max_mm_iters = 1e4
+                
+                params.save_data        (1,1) logical                   = false
+                params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
+                params.file_name        (1,1) string                    = ""
             end
 
-            obj.nSamples = params.N;
-            obj.nPolyOrder = params.Q;
+            obj.nSamples = params.nr_samples;
+            obj.nPolyOrder = params.nr_params;
             obj.pNorm = params.pNorm;
             obj.tol = params.tol; 
-            obj.nMaxIters = params.nMaxIters;
-            if isempty(params.logFile)
-                obj.SaveData = @(varargin) [];
-            else
-                obj.matObj = matfile(params.logFile, "Writable", true);
-                obj.SaveData = @obj.saveImplementation;
-                obj.matObj.a = zeros(obj.nPolyOrder,0);
-            end
+            obj.nMaxIters = params.max_mm_iters;
+            
+            % Prepare data logger
+            obj.data_logger = DataLogger("log_enabled",params.save_data, "file_location",params.file_location, "file_name",params.file_name);
+            obj.data_logger.log("params", params);
         end
 
         function [xUpdate, aUpdate] = perfectSquare(obj, x, a)
@@ -79,12 +78,16 @@ classdef PECS < handle
         function mpsl(obj, x0, a0)
             x = x0;
             a = a0;
+            obj.data_logger.log("a", a);
             for i = 1:obj.nMaxIters
                 xTmp = obj.mpslStep(x);
                 [x, a] = obj.perfectSquare(xTmp, a);
-                obj.SaveData(a);
+                obj.data_logger.log("a", a);
             end
-            obj.SaveData();
+        end
+
+        function delete(obj)
+            delete(obj.data_logger);
         end
 
         function xUpdate = mpslStep(obj, x)
@@ -134,23 +137,6 @@ classdef PECS < handle
             V = vSamples .^(0:obj.nPolyOrder-1); % Vandermonde
             phase = V*a;
             x = exp(1i*phase);
-        end
-
-        function saveImplementation(obj, a)
-            arguments
-                obj 
-                a (:,1) = NaN
-            end
-
-            if ~isnan(a)
-                obj.tmp(:,end+1) = a;
-            end
-            len = size(obj.tmp,2);
-            
-            if all([(len>0); any([(len >= 100);isnan(a)])])
-                obj.matObj.a(:, (end+1):(end+len) ) = obj.tmp;
-                obj.tmp = [];
-            end
         end
 
         function [isl_lin, isl_dB] = getIsl(obj)

@@ -10,14 +10,7 @@ classdef CDMM < handle
 		deltaD
 
         data_logger
-        log_descent    = @(varargin) [] % Initially NOP
-        log_mm_step    = @(varargin) [] % Initially NOP
-        save_all        = @(varargin) [] % Initially NOP
-            
-        tmp_a_mm
-        tmp_nufft
-        tmp_a
-	end
+   	end
 
 	methods
 		function obj = CDMM(params)
@@ -32,7 +25,7 @@ classdef CDMM < handle
 
                 params.save_data        (1,1) logical                   = false
                 params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
-                params.file_name        (1,1) string                    = NaN
+                params.file_name        (1,1) string                    = ""
 			end
 
 			obj.nr_samples      = params.nr_samples;
@@ -47,15 +40,8 @@ classdef CDMM < handle
 			obj.deltaD = eqn.deltaD_mat(obj.nr_samples, obj.nr_params);
 
             % Prepare data logger
-            if params.save_data
-                obj.data_logger = matfile(params.file_location + "\" + params.file_name + ".mat", "Writable",true);
-                obj.log_descent = @obj.update_descent;
-                obj.log_mm_step = @obj.update_a_mm;
-                obj.save_all    = @obj.save_file;
-
-                % Prepare editable data
-                obj.data_logger.params = params;
-            end
+            obj.data_logger = DataLogger("log_enabled",params.save_data, "file_location",params.file_location, "file_name",params.file_name);
+            obj.data_logger.log("params", params);
 		end
 
 		function a = type2(obj, a)
@@ -82,14 +68,18 @@ classdef CDMM < handle
                     nufft_df = NUFFT("x",1i*d.*g, "K",obj.oversampling*numel(g));
                     nufft_df.prepareInterpolator("J",obj.nr_neighbors);
 
-                    obj.log_descent(nufft_f, a, p, i_cd);
+                    obj.data_logger.log("isl", nufft_f, "a", a);
     
                     % Select multiple MM candidates
-                    [~, idx_a] = findpeaks(- abs(nufft_f.X), "NPeaks", obj.nr_candidates-1, "SortStr","descend");
-                    % [~, idx_a]  = mink( nufft_f.X , obj.nr_candidates-1 );
-                    a_MM        = [ a(p) ; real(2*pi*nufft_f.f(idx_a)) ];
+                    if obj.nr_candidates > 1
+                        [~, idx_a] = findpeaks(- abs(nufft_f.X(1:round(nufft_f.K/4))), "NPeaks", obj.nr_candidates-1, "SortStr","descend");
+                        % [~, idx_a]  = mink( nufft_f.X , obj.nr_candidates-1 );
+                        a_MM        = [ a(p) ; real(2*pi*nufft_f.f(idx_a)) ];
+                    else
+                        a_MM = a(p);
+                    end
     
-                    obj.log_mm_step(a_MM, 0, p, i_cd);
+                    obj.data_logger.log("a_MM", a_MM, "i_MM", 0, "p", p, "i_cd", i_cd);
                     % Majorize / Minimize
                     for i = 1:obj.max_mm_iters
                         tangent = real(nufft_df.interpolate(a_MM));
@@ -99,7 +89,7 @@ classdef CDMM < handle
                         % end
                         a_MM = a_MM - tangent/smoothness;
                         a_MM = mod(a_MM, 2*pi);
-                        obj.log_mm_step(a_MM, i, p, i_cd);
+                        obj.data_logger.log("a_MM", a_MM, "i_MM", i, "p", p, "i_cd", i_cd);
                     end
     
                     % Select final minima
@@ -110,8 +100,11 @@ classdef CDMM < handle
                 end
             end
 
-            obj.log_descent(nufft_f, a, p, i_cd);
-            obj.save_all();
+            obj.data_logger.log("a", a);
+        end
+
+        function delete(obj)
+            delete(obj.data_logger);
         end
 
 		function isl_dB = ComputeIsl_dB(obj,a)
@@ -132,30 +125,5 @@ classdef CDMM < handle
 			isl_dB = 10*log10(isl_lin);
 		end
 
-    end
-
-    methods (Access=private)
-        function update_a_mm(obj, a, i, p, i_cd)
-            arguments
-                obj 
-                a       (:,1) double = NaN
-                i       (1,1) double = NaN
-                p       (1,1) double = NaN
-                i_cd    (1,1) double = NaN
-            end
-            
-            obj.tmp_a_mm(:,i+1,p-2,i_cd) = a;
-        end
-
-        function update_descent(obj, nufft, a, p, i_cd)
-            obj.tmp_nufft{p-2, i_cd} = nufft;
-            obj.tmp_a(:, p-2, i_cd) = a;
-        end
-
-        function save_file(obj)
-            obj.data_logger.a_mm = obj.tmp_a_mm;
-            obj.data_logger.a = obj.tmp_a;
-            obj.data_logger.nufft = obj.tmp_nufft;
-        end
     end
 end
