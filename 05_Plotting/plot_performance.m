@@ -49,9 +49,9 @@ xlabel("Number of MM steps (-)")
 lgd = legend(label, "Location","best", "Box","off");
 lgd.IconColumnWidth = 5;
 
-figure_handler.PreparePdf(fig{1}, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
+figure_handler.PrepareEmf(fig{1}, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
 for i = 2:numel(fig)
-    figure_handler.PreparePdf(fig{i}, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
+    figure_handler.PrepareEmf(fig{i}, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
 end
 clear ans
 figure_handler.GenerateOutputs();

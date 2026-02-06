@@ -31,7 +31,7 @@ classdef DataLogger < handle
 
             obj.file_path   = params.file_location + "\" + params.file_name;
             if params.add_timestamp
-                obj.file_path = obj.file_path + "_" + string(datetime('now', 'Format','yyyy-MM-dd_HH:mm:ss'));
+                obj.file_path = obj.file_path + "_" + string(datetime('now', 'Format','yyyy-MM-dd_HHmmss'));
             end
             
 
