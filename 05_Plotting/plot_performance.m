@@ -16,15 +16,18 @@ pecs = load("02_Data\pecs_performance.mat");
 isl_dB_cdmm = get_isl(a, cdmm.params);
 isl_dB_pecs = get_isl(pecs.a, pecs.params);
 
+a_mm = mod(a_mm, pi);
+
 fig{end+1} = figure("Name", "ISL in Coordinate"); 
-plot(cdmm.isl(1).f*2, 10*log10(cdmm.isl(1).X), '.', "DisplayName","ISL");hold on; 
+theta = linspace(0, 2*pi, 1e5);
+plot(theta/(pi), 10*log10(abs(cdmm.isl(1).interpolate(theta))), '.', "DisplayName","ISL");hold on; 
 plot(a_mm(1,:)/pi, isl_dB_cdmm(1,:), 'o', "DisplayName","Startposition");
 plot(a_mm(:,1)/pi, isl_dB_cdmm(:,1), '.', "DisplayName","Path");
 plot(a_mm(end,:)/pi, isl_dB_cdmm(end,:), 'x', "DisplayName","Endposition");
 plot(a_mm(:,2:end)/pi, isl_dB_cdmm(:,2:end), '.', "HandleVisibility","off");
-xlim([0,.5]);
+xlim([0,1]);
 xticks([0,.25, .5, .75,1, 1.25, 1.5, 1.75, 2]);
-xticklabels({"$0$", "$\frac{\pi}{4}$", "$\frac{\pi}{2}$"})
+xticklabels({"$0$", "$\frac{\pi}{4}$", "$\frac{\pi}{2}$", "$\frac{3\pi}{4}$", "$\pi$"})
 xlabel("$a_p$ (-)");
 ylabel("ISL (dB)");
 legend("Location","northeast", "NumColumns", 2, "Box","off")
