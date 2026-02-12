@@ -19,9 +19,9 @@ classdef CDMMT3 < handle
 				params.nr_params        (1,1) double {mustBePositive}           % Number of Parameters
                 params.nr_neighbors     (1,1) double {mustBePositive}   = 4    % Number of neighbors to include for interpolation
                 params.nr_candidates    (1,1) double {mustBePositive}   = 30    % Number of minima to pursue
-                params.max_mm_iters     (1,1) double {mustBePositive}   = 1e4   % Maximum number of MM steps
+                params.max_mm_iters     (1,1) double {mustBePositive}   = 1e3   % Maximum number of MM steps
                 params.nr_cd_iterations (1,1) double {mustBePositive}   = 1     % Number of complete CD iterations
-                params.oversampling     (1,1) double {mustBePositive}   = 5     % Oversampling for NUFFT
+                params.oversampling     (1,1) double {mustBePositive}   = 2     % Oversampling for NUFFT
 
                 params.save_data        (1,1) logical                   = false
                 params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
@@ -57,24 +57,26 @@ classdef CDMMT3 < handle
                     g           = g / ( obj.nr_samples^3 );
                     smoothness  = sum( d.^2 .* abs(g) ); % M-Smooth Lipschwitz continuous
                    
-                    % Rescaling
-                    % energy  = sum( abs(g).^2 ); 
-                    % g       = g / sqrt(energy); 
-    
+                    d(g == 0) = [];
+                    g(g == 0) = [];
+                    % g(d<0) = [];
+                    % d(d<0) = [];
+
+                    dA = 20* 2*pi/max(d);
+
                     % NUFFT for ISL and dISL/da
-                    f = oNufft.Type3(d, g, [0,2*pi]);
-                    df = oNufft.Type3(d, 1i*d.*g, [0, 2*pi]);
-                    f.apply();
-                    df.apply();
+                    candidates(:,1) = a(p) + 0.5*dA*linspace(-1, 1, obj.nr_candidates*100+1);
+                    f = oNufft.Type3(d, candidates);
+                    df = oNufft.Type3(d, candidates);
+                    f.apply(d, g);
+                    df.apply(d, 1i*d.*g);
 
                     obj.data_logger.log("isl", f, "a", a);
     
                     % Select multiple MM candidates
                     if obj.nr_candidates > 1
-                        candidates(:,1) = linspace(0, 2*pi, obj.nr_candidates*20);
-                        [~, idx_a] = findpeaks(- abs(f.interpolate(candidates)), "NPeaks", obj.nr_candidates-1, "SortStr","descend");
-                        % [~, idx_a]  = mink( nufft_f.X , obj.nr_candidates-1 );
-                        a_MM        = [ a(p) ; candidates(idx_a) ];
+                        [~, idx_a] = findpeaks(- abs(f.interpolate(candidates)), "NPeaks", obj.nr_candidates, "SortStr","descend");
+                        a_MM        = [ candidates(idx_a) ];
                     else
                         a_MM = a(p);
                     end
@@ -83,12 +85,11 @@ classdef CDMMT3 < handle
                     % Majorize / Minimize
                     for i = 1:obj.max_mm_iters
                         tangent = -real(df.interpolate(a_MM));
-                        % error = abs(nufft_df.error(a_MM)); % Interpolation error
-                        % if abs(tangent) > error % Correction still save
-                        % a_MM = a_MM - (tangent + sign(tangent).*error)/smoothness;
-                        % end
+                        if all(tangent / smoothness < 1e-5)
+                            break;
+                        end
                         a_MM = a_MM - tangent/smoothness;
-                        a_MM = mod(a_MM, 2*pi);
+                        % a_MM = mod(a_MM, 2*pi);
                         obj.data_logger.log("a_MM", a_MM, "i_MM", i, "p", p, "i_cd", i_cd);
                     end
     
@@ -96,7 +97,7 @@ classdef CDMMT3 < handle
                     isl     = real(f.interpolate(a_MM));
 				    [~, k]  = min(isl, [], "all");
                     a(p)    = a_MM(k);
-                    clear a_MM phi
+                    % clear a_MM phi
                 end
             end
 

@@ -21,7 +21,7 @@ classdef PECS < handle
                 params.nr_params
                 params.pNorm = 2
                 params.tol = 1e-4
-                params.max_mm_iters = 1e4
+                params.max_mm_iters = 1e3
                 
                 params.save_data        (1,1) logical                   = false
                 params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
@@ -81,7 +81,11 @@ classdef PECS < handle
             obj.data_logger.log("a", a);
             for i = 1:obj.nMaxIters
                 xTmp = obj.mpslStep(x);
-                [x, a] = obj.perfectSquare(xTmp, a);
+                [x, a_] = obj.perfectSquare(xTmp, a);
+                if all(abs(a_ - a) < 1e-5)
+                    break;
+                end
+                a = a_;
                 obj.data_logger.log("a", a);
             end
         end

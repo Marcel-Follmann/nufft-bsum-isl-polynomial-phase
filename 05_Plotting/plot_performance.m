@@ -19,15 +19,15 @@ isl_dB_pecs = get_isl(pecs.a, pecs.params);
 a_mm = mod(a_mm, pi);
 
 fig{end+1} = figure("Name", "ISL in Coordinate"); 
-theta = linspace(0, 2*pi, 1e5);
+theta = linspace(cdmm.isl(1).s_range(1), cdmm.isl(1).s_range(2), 1e3);
 plot(theta/(pi), 10*log10(abs(cdmm.isl(1).interpolate(theta))), '.', "DisplayName","ISL");hold on; 
 plot(a_mm(1,:)/pi, isl_dB_cdmm(1,:), 'o', "DisplayName","Startposition");
 plot(a_mm(:,1)/pi, isl_dB_cdmm(:,1), '.', "DisplayName","Path");
 plot(a_mm(end,:)/pi, isl_dB_cdmm(end,:), 'x', "DisplayName","Endposition");
 plot(a_mm(:,2:end)/pi, isl_dB_cdmm(:,2:end), '.', "HandleVisibility","off");
-xlim([0,1]);
-xticks([0,.25, .5, .75,1, 1.25, 1.5, 1.75, 2]);
-xticklabels({"$0$", "$\frac{\pi}{4}$", "$\frac{\pi}{2}$", "$\frac{3\pi}{4}$", "$\pi$"})
+% xlim([0,1]);
+% xticks([0,.25, .5, .75,1, 1.25, 1.5, 1.75, 2]);
+% xticklabels({"$0$", "$\frac{\pi}{4}$", "$\frac{\pi}{2}$", "$\frac{3\pi}{4}$", "$\pi$"})
 xlabel("$a_p$ (-)");
 ylabel("ISL (dB)");
 legend("Location","northeast", "NumColumns", 2, "Box","off")
@@ -79,9 +79,9 @@ end
 
 function [a, a_mm] = reorder_cdmm(cdmm)
     a = cdmm.a(:,1);
-    a_mm = reshape(cdmm.a_MM, cdmm.params.nr_candidates, cdmm.params.max_mm_iters+1, cdmm.params.nr_params-2, cdmm.params.nr_cd_iterations);
+    a_mm = reshape(cdmm.a_MM, cdmm.params.nr_candidates, [], cdmm.params.nr_params-2, cdmm.params.nr_cd_iterations);
     a_mm = permute(a_mm(:,:,1,1), [3, 2, 1]);
-    a = a.*ones(cdmm.params.nr_params, cdmm.params.max_mm_iters+1, cdmm.params.nr_candidates);
+    a = a.*ones(cdmm.params.nr_params, size(a_mm,2), cdmm.params.nr_candidates);
     a(3,:,:) = a_mm;
     
     a_mm = permute(a_mm, [2, 3, 1]);
