@@ -53,10 +53,11 @@ classdef CDMM < handle
             for i_cd = 1:obj.nr_cd_iters
 			    for p = 3:obj.nr_params
                     % Bring into DFT format
-				    [g, d]      = eqn.G(a, p, obj.deltaD, obj.nr_samples, obj.nr_params); 
+				    [g, d]      = eqn.G(a, p, obj.deltaD, obj.nr_samples, obj.nr_params);
+                    stem(d(d>0), abs(g(d>0)));
                     g           = g / ( obj.nr_samples^3 );
                     smoothness  = sum( d.^2 .* abs(g) ); % M-Smooth Lipschwitz continuous
-                   
+                    
                     % Rescaling
                     % energy  = sum( abs(g).^2 ); 
                     % g       = g / sqrt(energy); 

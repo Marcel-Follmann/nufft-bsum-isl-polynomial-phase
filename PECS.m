@@ -20,7 +20,7 @@ classdef PECS < handle
                 params.nr_samples
                 params.nr_params
                 params.pNorm = 2
-                params.tol = 1e-4
+                params.tol = 0
                 params.max_mm_iters = 1e3
                 
                 params.save_data        (1,1) logical                   = false
@@ -64,7 +64,7 @@ classdef PECS < handle
             % Generate a sequence with a random code reference
             mCode = PhaseCodeType.Random;
             signal = mCode.generate(obj.nSamples);
-            phaseReference = angle(signal);
+            phaseReference = unwrap(angle(signal));
             vSamples(:,1) = 1:obj.nSamples;
 
             polynomialModel = zeros(obj.nSamples, obj.nPolyOrder);
@@ -82,7 +82,7 @@ classdef PECS < handle
             for i = 1:obj.nMaxIters
                 xTmp = obj.mpslStep(x);
                 [x, a_] = obj.perfectSquare(xTmp, a);
-                if all(abs(a_ - a) < 1e-5)
+                if all(abs(a_ - a) < obj.tol)
                     break;
                 end
                 a = a_;

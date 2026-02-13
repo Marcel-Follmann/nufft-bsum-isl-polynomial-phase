@@ -7,7 +7,12 @@ classdef CDMMT3 < handle
         nr_cd_iters
         max_mm_iters
         oversampling
-		deltaD
+		dg
+        Gd
+        smoothness
+        tol
+
+        a_minima
 
         data_logger
    	end
@@ -22,6 +27,7 @@ classdef CDMMT3 < handle
                 params.max_mm_iters     (1,1) double {mustBePositive}   = 1e3   % Maximum number of MM steps
                 params.nr_cd_iterations (1,1) double {mustBePositive}   = 1     % Number of complete CD iterations
                 params.oversampling     (1,1) double {mustBePositive}   = 2     % Oversampling for NUFFT
+                params.tol              (1,1) double {mustBeNonnegative}   = 0  % Tolerance for local minima
 
                 params.save_data        (1,1) logical                   = false
                 params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
@@ -35,9 +41,34 @@ classdef CDMMT3 < handle
             obj.nr_candidates   = params.nr_candidates;
             obj.nr_cd_iters     = params.nr_cd_iterations;
             obj.oversampling    = params.oversampling;
+            obj.tol             = params.tol;
 
             % Prepare DFT reformatting
-			obj.deltaD = eqn.deltaD_mat(obj.nr_samples, obj.nr_params);
+			% obj.deltaD = eqn.deltaD_mat(obj.nr_samples, obj.nr_params);
+
+            [obj.dg, Gd_abs] = calculate_gd(obj.nr_samples, obj.nr_params);
+            obj.Gd = 2*Gd_abs./(obj.nr_samples^3);
+            [~, I] = sort(obj.dg(1,:));
+            d = obj.dg(:,I);
+            g = obj.Gd(I);
+
+
+            N = floor(numel(g)/2);
+            g(1:N) = [];
+            d(:,1:N) = [];
+            d_max = max(d, [], 'all');
+            for i = 1:size(d,1)
+                tmp(i,:) = accumarray(d(i,:).'+1, g.', [d_max+1,1]);
+            end
+            
+            n_tmp = 0:size(tmp,2)-1;
+            % stem(tmp(2:end)); hold on;
+            obj.smoothness  = sum( n_tmp.^2 .* tmp ,2); % M-Smooth Lipschwitz continuous
+            
+            a_minima_mean = 2*pi./sqrt(sum(n_tmp.^2 .* tmp.^2, 2)./sum(tmp.^2,2));
+            p = 0.99; % 99th percentile
+            obj.a_minima = -a_minima_mean*log(1-p);
+
 
             % Prepare data logger
             obj.data_logger = DataLogger("log_enabled",params.save_data, "file_location",params.file_location, "file_name",params.file_name);
@@ -49,33 +80,37 @@ classdef CDMMT3 < handle
 				obj 
 				a (:,1) double 
             end
+
+            phase = a(3:end).'*obj.dg;
+            g = obj.Gd.*exp(-1i*phase); % 2*(2, because of Real part)
 			
             for i_cd = 1:obj.nr_cd_iters
 			    for p = 3:obj.nr_params
                     % Bring into DFT format
-				    [g, d]      = eqn.G(a, p, obj.deltaD, obj.nr_samples, obj.nr_params); 
-                    g           = g / ( obj.nr_samples^3 );
-                    smoothness  = sum( d.^2 .* abs(g) ); % M-Smooth Lipschwitz continuous
-                   
-                    d(g == 0) = [];
-                    g(g == 0) = [];
-                    % g(d<0) = [];
-                    % d(d<0) = [];
+                    d = obj.dg(p-2,:);
+                    phase = a(p).'*d;
+                    g = g.*exp(1i*phase);
 
-                    dA = 20* 2*pi/max(d);
+                    dA = 2*pi/max(d);
 
                     % NUFFT for ISL and dISL/da
-                    candidates(:,1) = a(p) + 0.5*dA*linspace(-1, 1, obj.nr_candidates*100+1);
-                    f = oNufft.Type3(d, candidates);
-                    df = oNufft.Type3(d, candidates);
+                    % candidates(:,1) = linspace(0, 2*pi, 1e4);
+                    % candidates = a(p) + dA*(-obj.nr_candidates*n:obj.nr_candidates*n).';
+                    candidates = a(p) + dA*(-obj.nr_samples^2:obj.nr_samples^2).';
+                    a_range = [candidates(1), candidates(end)];
+                    f = oNufft.Type3(d, candidates, "epsilon",1e-16);
+                    df = oNufft.Type3(d, candidates, "epsilon",1e-16);
                     f.apply(d, g);
                     df.apply(d, 1i*d.*g);
-
+                    
                     obj.data_logger.log("isl", f, "a", a);
     
                     % Select multiple MM candidates
                     if obj.nr_candidates > 1
-                        [~, idx_a] = findpeaks(- abs(f.interpolate(candidates)), "NPeaks", obj.nr_candidates, "SortStr","descend");
+                        [~, idx_a] = findpeaks(- real(f.interpolate(candidates)), "NPeaks", obj.nr_candidates, "SortStr","descend");
+                        if numel(idx_a) < obj.nr_candidates
+                            warning("CDMM: Could not find the required nr of MM candidates");
+                        end
                         a_MM        = [ candidates(idx_a) ];
                     else
                         a_MM = a(p);
@@ -85,19 +120,25 @@ classdef CDMMT3 < handle
                     % Majorize / Minimize
                     for i = 1:obj.max_mm_iters
                         tangent = -real(df.interpolate(a_MM));
-                        if all(tangent / smoothness < 1e-5)
+                        
+                        a_MM = a_MM - tangent/obj.smoothness(p-2);
+                        if allbetween(a_MM, a_range(1), a_range(2))
+                            obj.data_logger.log("a_MM", a_MM, "i_MM", i, "p", p, "i_cd", i_cd);
+                            if all(abs(tangent / obj.smoothness(p-2)) < obj.tol)
+                                break;
+                            end
+                        else
                             break;
                         end
-                        a_MM = a_MM - tangent/smoothness;
-                        % a_MM = mod(a_MM, 2*pi);
-                        obj.data_logger.log("a_MM", a_MM, "i_MM", i, "p", p, "i_cd", i_cd);
                     end
     
                     % Select final minima
                     isl     = real(f.interpolate(a_MM));
-				    [~, k]  = min(isl, [], "all");
+				    [~, k]  = min(isl);
                     a(p)    = a_MM(k);
-                    % clear a_MM phi
+                    % clear a_MM
+                    phase = a(p).'*d;
+                    g = g.*exp(-1i*phase);
                 end
             end
 

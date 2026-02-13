@@ -16,11 +16,12 @@ pecs = load("02_Data\pecs_performance.mat");
 isl_dB_cdmm = get_isl(a, cdmm.params);
 isl_dB_pecs = get_isl(pecs.a, pecs.params);
 
-a_mm = mod(a_mm, pi);
+% a_mm = mod(a_mm, pi);
 
 fig{end+1} = figure("Name", "ISL in Coordinate"); 
-theta = linspace(cdmm.isl(1).s_range(1), cdmm.isl(1).s_range(2), 1e3);
-plot(theta/(pi), 10*log10(abs(cdmm.isl(1).interpolate(theta))), '.', "DisplayName","ISL");hold on; 
+% theta = linspace(0, 2*pi, 1e4);
+theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 1e5);
+plot(theta/(pi), 10*log10(real(cdmm.isl(end).interpolate(theta))), '.', "DisplayName","ISL");hold on; 
 plot(a_mm(1,:)/pi, isl_dB_cdmm(1,:), 'o', "DisplayName","Startposition");
 plot(a_mm(:,1)/pi, isl_dB_cdmm(:,1), '.', "DisplayName","Path");
 plot(a_mm(end,:)/pi, isl_dB_cdmm(end,:), 'x', "DisplayName","Endposition");
@@ -78,11 +79,12 @@ function isl_dB = get_isl(a, params)
 end
 
 function [a, a_mm] = reorder_cdmm(cdmm)
-    a = cdmm.a(:,1);
-    a_mm = reshape(cdmm.a_MM, cdmm.params.nr_candidates, [], cdmm.params.nr_params-2, cdmm.params.nr_cd_iterations);
-    a_mm = permute(a_mm(:,:,1,1), [3, 2, 1]);
-    a = a.*ones(cdmm.params.nr_params, size(a_mm,2), cdmm.params.nr_candidates);
-    a(3,:,:) = a_mm;
+    a = cdmm.a(:,end-1);
+    a_mm = cdmm.a_MM(:, find(cdmm.i_MM == 0,1,"last"):end);
+    % a_mm = a_mm(:,:,end,end);
+    a_mm = permute(a_mm, [3, 2, 1]);
+    a = a.*ones(cdmm.params.nr_params, size(a_mm,2), cdmm.params.nr_candidates, cdmm.params.nr_cd_iterations);
+    a(end,:,:) = a_mm;
     
     a_mm = permute(a_mm, [2, 3, 1]);
 end
