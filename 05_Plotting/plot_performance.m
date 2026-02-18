@@ -20,7 +20,7 @@ isl_dB_pecs = get_isl(pecs.a, pecs.params);
 
 fig{end+1} = figure("Name", "ISL in Coordinate"); 
 % theta = linspace(0, 2*pi, 1e4);
-theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 1e5);
+theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 5e2);
 plot(theta/(pi), 10*log10(real(cdmm.isl(end).interpolate(theta))), '.', "DisplayName","ISL");hold on; 
 plot(a_mm(1,:)/pi, isl_dB_cdmm(1,:), 'o', "DisplayName","Startposition");
 plot(a_mm(:,1)/pi, isl_dB_cdmm(:,1), '.', "DisplayName","Path");
@@ -36,26 +36,26 @@ box on; %grid on;
 
 fig{end+1} = figure("Name", "Convergence Plot"); 
 label = ["PECS: Initial", "CDMM: Initial", "CDMM: Candidate " + string(2:cdmm.params.nr_candidates)];
-semilogx(isl_dB_pecs); hold on;
-semilogx(isl_dB_cdmm);
+semilogx(isl_dB_pecs, '.'); hold on;
+semilogx(isl_dB_cdmm, '.');
 box on; %grid on; 
 ylabel("ISL (dB)");
 xlabel("Number of MM steps (-)")
 lgd = legend(label, "Location","best", "Box","off");
 lgd.IconColumnWidth = 5;
 
-fig{end+1} = figure("Name", "Convergence Plot Zoom"); 
-label = "CDMM: Candidate " + string(2:cdmm.params.nr_candidates);
-semilogx(isl_dB_cdmm(:,2:end));
-box on; %grid on; 
-ylabel("ISL (dB)");
-xlabel("Number of MM steps (-)")
-lgd = legend(label, "Location","best", "Box","off");
-lgd.IconColumnWidth = 5;
+% fig{end+1} = figure("Name", "Convergence Plot Zoom"); 
+% label = "CDMM: Candidate " + string(2:cdmm.params.nr_candidates);
+% semilogx(isl_dB_cdmm(:,2:end));
+% box on; %grid on; 
+% ylabel("ISL (dB)");
+% xlabel("Number of MM steps (-)")
+% lgd = legend(label, "Location","best", "Box","off");
+% lgd.IconColumnWidth = 5;
 
-figure_handler.PrepareEmf(fig{1}, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
+figure_handler.PrepareEmf(fig{1});%, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
 for i = 2:numel(fig)
-    figure_handler.PrepareEmf(fig{i}, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
+    figure_handler.PrepareEmf(fig{i});%, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
 end
 clear ans
 figure_handler.GenerateOutputs();

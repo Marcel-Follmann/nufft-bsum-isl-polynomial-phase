@@ -82,24 +82,26 @@ classdef CDMMT3 < handle
             end
 
             phase = a(3:end).'*obj.dg;
-            g = obj.Gd.*exp(-1i*phase); % 2*(2, because of Real part)
+            g = obj.Gd.*exp(1i*phase); 
 			
             for i_cd = 1:obj.nr_cd_iters
 			    for p = 3:obj.nr_params
                     % Bring into DFT format
                     d = obj.dg(p-2,:);
                     phase = a(p).'*d;
-                    g = g.*exp(1i*phase);
+                    g = g.*exp(-1i*phase);
 
-                    dA = 2*pi/max(d);
+                    dA = pi/max(d);
+
+                    d_range = [min(d), max(d)];
 
                     % NUFFT for ISL and dISL/da
-                    % candidates(:,1) = linspace(0, 2*pi, 1e4);
+                    % candidates(:,1) = linspace(-pi, pi, 1e4);
                     % candidates = a(p) + dA*(-obj.nr_candidates*n:obj.nr_candidates*n).';
-                    candidates = a(p) + dA*(-obj.nr_samples^2:obj.nr_samples^2).';
+                    candidates = a(p) + dA*(-obj.nr_samples:obj.nr_samples).';
                     a_range = [candidates(1), candidates(end)];
-                    f = oNufft.Type3(d, candidates, "epsilon",1e-16);
-                    df = oNufft.Type3(d, candidates, "epsilon",1e-16);
+                    f = oNufft.Type3(d_range, a_range, "epsilon",obj.tol/1000);
+                    df = oNufft.Type3(d_range, a_range, "epsilon",obj.tol/1000);
                     f.apply(d, g);
                     df.apply(d, 1i*d.*g);
                     
@@ -113,13 +115,14 @@ classdef CDMMT3 < handle
                         end
                         a_MM        = [ candidates(idx_a) ];
                     else
-                        a_MM = a(p);
+                        [~, idx_a] = min(real(f.interpolate(candidates)));
+                        a_MM = candidates(idx_a);
                     end
     
                     obj.data_logger.log("a_MM", a_MM, "i_MM", 0, "p", p, "i_cd", i_cd);
                     % Majorize / Minimize
                     for i = 1:obj.max_mm_iters
-                        tangent = -real(df.interpolate(a_MM));
+                        tangent = real(df.interpolate(a_MM));
                         
                         a_MM = a_MM - tangent/obj.smoothness(p-2);
                         if allbetween(a_MM, a_range(1), a_range(2))
@@ -138,7 +141,7 @@ classdef CDMMT3 < handle
                     a(p)    = a_MM(k);
                     % clear a_MM
                     phase = a(p).'*d;
-                    g = g.*exp(-1i*phase);
+                    g = g.*exp(1i*phase);
                 end
             end
 

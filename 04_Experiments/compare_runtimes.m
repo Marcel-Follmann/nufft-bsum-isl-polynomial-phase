@@ -5,9 +5,12 @@ addpath("02_Data\");
 
 data_logger = DataLogger("log_enabled",true, "file_name","runtime_analysis", "add_timestamp",true);
 
-nr_monte_carlo = 10;
-nr_samples(:,1) = 2.^(3:6); % max 8
-poly_order(:,1) = 3:4; % max 4
+nr_monte_carlo = 5;
+nr_samples(:,1) = 2.^(3:7); % max 8
+poly_order(:,1) = 3:5; % max 4
+
+n_max_iter = 1e5; 
+tol = 1e-12;
 
 data_logger.log(...
     "nr_monte_carlos", nr_monte_carlo, ...
@@ -20,8 +23,8 @@ for idx_samples = 1:numel(nr_samples)
         fprintf("Samples: %d, Order: %d -> ", nr_samples(idx_samples), poly_order(idx_poly_order));
 
         % Prepare Methods
-        pecs = PECS("nr_samples",nr_samples(idx_samples), "nr_params",poly_order(idx_poly_order), "max_mm_iters", 1e4, "tol",1e-6);
-        cdmm = CDMMT3("nr_samples",nr_samples(idx_samples), "nr_params", poly_order(idx_poly_order), "max_mm_iters", 1e4, "tol", 1e-6, "nr_candidates",1);
+        pecs = PECS("nr_samples",nr_samples(idx_samples), "nr_params",poly_order(idx_poly_order), "max_mm_iters", n_max_iter, "tol",tol);
+        cdmm = CDMMT3("nr_samples",nr_samples(idx_samples), "nr_params", poly_order(idx_poly_order), "max_mm_iters", n_max_iter, "tol", tol, "nr_candidates",1);
 
         timeCDMM = zeros(nr_monte_carlo, 1);
         timePECS = zeros(nr_monte_carlo, 1);
