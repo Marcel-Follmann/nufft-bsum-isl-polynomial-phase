@@ -28,7 +28,7 @@ function [d, Gd] = calculate_gd(N,Q)
     end
 
     d = d_g; 
-    Gd = Gd_;
+    Gd = 2*Gd_/(N^3);
 end
 
 function d = D(n,m,k,q)

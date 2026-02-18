@@ -1,13 +1,7 @@
 classdef PECS < handle
 
     properties
-        nSamples
-        nPolyOrder
-        pNorm
-        tol
-        nMaxIters
-        
-        data_logger
+        params Params = Params.empty
     end
 
     properties (SetAccess = protected)
@@ -17,34 +11,17 @@ classdef PECS < handle
     methods
         function obj = PECS(params)
             arguments
-                params.nr_samples
-                params.nr_params
-                params.pNorm = 2
-                params.tol = 0
-                params.max_mm_iters = 1e3
-                
-                params.save_data        (1,1) logical                   = false
-                params.file_location    (1,1) string {mustBeFolder}     = "02_Data"
-                params.file_name        (1,1) string                    = ""
+                params Params = Params.empty
             end
-
-            obj.nSamples = params.nr_samples;
-            obj.nPolyOrder = params.nr_params;
-            obj.pNorm = params.pNorm;
-            obj.tol = params.tol; 
-            obj.nMaxIters = params.max_mm_iters;
-            
-            % Prepare data logger
-            obj.data_logger = DataLogger("log_enabled",params.save_data, "file_location",params.file_location, "file_name",params.file_name);
-            obj.data_logger.log("params", params);
+            obj.params = params;
         end
 
         function [xUpdate, aUpdate] = perfectSquare(obj, x, a)
             phaseReference = angle(x);
             magnitudeReference = abs(x);
 
-            vSamples(:,1) = 1:obj.nSamples;
-            V = vSamples .^(0:obj.nPolyOrder-1); % Vandermonde
+            vSamples(:,1) = 1:obj.params.nr_samples;
+            V = vSamples .^(0:obj.params.nr_params-1); % Vandermonde
 
             phaseModel = V*a;
             phaseError = phaseModel - phaseReference;
@@ -56,42 +33,36 @@ classdef PECS < handle
             A = 2*wCos .* V;
             
             % Match Model
-            [aUpdate, ~] = lsqr(A,-b, 1e-3);
-            xUpdate = obj.generateSignal(aUpdate);
-        end
-
-        function [x0, a0] = getRandomSequence(obj)
-            % Generate a sequence with a random code reference
-            mCode = PhaseCodeType.Random;
-            signal = mCode.generate(obj.nSamples);
-            phaseReference = unwrap(angle(signal));
-            vSamples(:,1) = 1:obj.nSamples;
-
-            polynomialModel = zeros(obj.nSamples, obj.nPolyOrder);
-            for q = 1:obj.nPolyOrder
-                polynomialModel(:,q) = vSamples.^(q-1);
+            [aUpdate, flag] = lsqr(A,-b, 1e-3);
+            if flag > 0
+                msg = sprintf("Tolerance for lsqr calculation too tight. Error Code: %d", flag);
+                warning("PECS:Perfect_Square_Calculation", msg);
             end
-            [a0,~] = lsqr(polynomialModel, phaseReference);
-            x0 = obj.generateSignal(a0);
+            xUpdate = obj.params.generate_signal(aUpdate);
         end
 
-        function mpsl(obj, x0, a0)
+        function mpsl(obj, x0, a0, options)
+            arguments
+                obj, 
+                x0, 
+                a0, 
+                options.data_logger Datalogger.Type = Datalogger.Empty()
+            end
+            options.data_logger.log("params", obj.params);
+
             x = x0;
             a = a0;
-            obj.data_logger.log("a", a);
-            for i = 1:obj.nMaxIters
+            options.data_logger.log("a", a);
+            for i = 1:obj.params.max_mm_iters
                 xTmp = obj.mpslStep(x);
                 [x, a_] = obj.perfectSquare(xTmp, a);
-                if all(abs(a_ - a) < obj.tol)
+                if norm(a_ - a) < obj.params.tol
                     break;
                 end
                 a = a_;
-                obj.data_logger.log("a", a);
+                options.data_logger.log("a", a);
             end
-        end
-
-        function delete(obj)
-            delete(obj.data_logger);
+            delete(options.data_logger);
         end
 
         function xUpdate = mpslStep(obj, x)
@@ -99,21 +70,21 @@ classdef PECS < handle
                 obj,
                 x (:,1)
             end
-            F = fft(x, 2*obj.nSamples); % 2N for Aperiodic ACF
+            F = fft(x, 2*obj.params.nr_samples); % 2N for Aperiodic ACF
             rCirc = ifft(abs(F).^2);
-            rPos = rCirc(2:obj.nSamples); % lags 1, .., nSamples-1
+            rPos = rCirc(2:obj.params.nr_samples); % lags 1, .., nr_samples-1
             rAbs = abs(rPos);
 
             % Normalize Sidelobes
-            t = norm(rAbs, obj.pNorm) + eps;
+            t = norm(rAbs, obj.params.p_norm) + eps;
             rho = rAbs ./ t;
 
             % Weights / Curvature terms
-            a = (1 + (obj.nPolyOrder-1).*rho.^obj.nPolyOrder - obj.nPolyOrder.*rho.^(obj.nPolyOrder-1)) ./ (t - rAbs).^2;
-            w = 0.5*obj.nPolyOrder/t^2 .* rho.^(obj.nPolyOrder-2);
+            a = (1 + (obj.params.nr_params-1).*rho.^obj.params.nr_params - obj.params.nr_params.*rho.^(obj.params.nr_params-1)) ./ (t - rAbs).^2;
+            w = 0.5*obj.params.nr_params/t^2 .* rho.^(obj.params.nr_params-2);
 
             % Bound maximum Eigenvalue
-            lagScale = (obj.nSamples-1:-1:1).';
+            lagScale = (obj.params.nr_samples-1:-1:1).';
             lambdaMaxL = max(lagScale .* a);
 
             wFlip = flipud(w);
@@ -127,36 +98,8 @@ classdef PECS < handle
             y = ifft(mu .* F);
 
             % Update 
-            alpha = obj.nSamples*lambdaMaxL + lambdaU;
-            xUpdate = alpha*x - y(1:obj.nSamples);
-
-        end
-
-        function x = generateSignal(obj,a)
-            arguments
-                obj
-                a (:, 1)
-            end
-            vSamples(:,1) = 1:obj.nSamples;
-            V = vSamples .^(0:obj.nPolyOrder-1); % Vandermonde
-            phase = V*a;
-            x = exp(1i*phase);
-        end
-
-        function [isl_lin, isl_dB] = getIsl(obj)
-            vSamples(:,1) = 1:obj.nSamples;
-            V = vSamples .^(0:obj.nPolyOrder-1); % Vandermonde
-            phase = V*obj.matObj.a;
-        
-	        x = exp(1i*phase);
-	        
-            F = fft(x, 2*obj.nSamples, 1); % 2N for Aperiodic ACF
-            rCirc = ifft(abs(F).^2, [],1);
-            rPos = rCirc(2:obj.nSamples,:); % lags 1, .., nSamples-1
-            rAbs = abs(rPos)/obj.nSamples;
-
-	        isl_lin = 2*sum(rAbs.^2,1)/obj.nSamples;
-	        isl_dB = 10*log10(isl_lin);
+            alpha = obj.params.nr_samples*lambdaMaxL + lambdaU;
+            xUpdate = alpha*x - y(1:obj.params.nr_samples);
         end
     end
 end
