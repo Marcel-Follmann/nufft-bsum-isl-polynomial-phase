@@ -20,8 +20,8 @@ isl_dB_pecs = get_isl(pecs.a, pecs.params);
 
 fig{end+1} = figure("Name", "ISL in Coordinate"); 
 % theta = linspace(0, 2*pi, 1e4);
-theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 5e2);
-plot(theta/(pi), 10*log10(real(cdmm.isl(end).interpolate(theta))), '.', "DisplayName","ISL");hold on; 
+theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 1e4);
+plot(theta/(pi), 10*log10(real(cdmm.isl(end).interpolate(theta))), '-', "DisplayName","ISL");hold on; 
 plot(a_mm(1,:)/pi, isl_dB_cdmm(1,:), 'o', "DisplayName","Startposition");
 plot(a_mm(:,1)/pi, isl_dB_cdmm(:,1), '.', "DisplayName","Path");
 plot(a_mm(end,:)/pi, isl_dB_cdmm(end,:), 'x', "DisplayName","Endposition");

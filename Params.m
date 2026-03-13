@@ -41,17 +41,14 @@ classdef Params
         end
 
         function [x0, a0] = get_random_sequence(obj)
-            % Generate a sequence with a random code reference
+            % [x0, a0] Generate a sequence with a random code reference
             mCode = PhaseCodeType.Random;
             signal = mCode.generate(obj.nr_samples);
             phaseReference = unwrap(angle(signal));
-            vSamples(:,1) = 1:obj.nr_samples;
+            vSamples = (1:obj.nr_samples).';
 
-            polynomialModel = zeros(obj.nr_samples, obj.nr_params);
-            for q = 1:obj.nr_params
-                polynomialModel(:,q) = vSamples.^(q-1);
-            end
-            [a0,~] = lsqr(polynomialModel, phaseReference);
+            polynomialModel = vSamples .^(0:obj.nr_params-1); % Vandermonde
+            a0 = polynomialModel \ phaseReference;
             x0 = obj.generate_signal(a0);
         end
 
@@ -67,21 +64,21 @@ classdef Params
         end
 
         function isl_dB = compute_isl_dB(obj,a)
-			paramPhase = zeros(1, obj.nr_samples);
-			for n=1:obj.nr_samples
-				paramPhase(n) = 0;
-				for q=1:obj.nr_params
-					paramPhase(n) = paramPhase(n) + ...
-						a(q)*n^(q-1);
-				end
-			end
+            samples = (1:obj.nr_samples).';
+            V = samples .^ (0:obj.nr_params-1); % Vandermonde
+            phase = pagemtimes(V,a);
 
-			x = exp(1i*sum(paramPhase, 1));
-			
-			acfFull = xcorr(x)/obj.nr_samples;
-			acf = acfFull(obj.nr_samples:end);
-			isl_lin = 2*sum( abs(acf(2:end)).^2)/obj.nr_samples;
-			isl_dB = 10*log10(isl_lin);
+			x = exp(1i*phase);
+    
+            F = fft(x, 2*obj.nr_samples, 1); % 2N for Aperiodic ACF
+            rCirc = ifft(abs(F).^2, [],1);
+            rPos = rCirc(2:obj.nr_samples,:,:); % lags 1, .., nSamples-1
+            rAbs = abs(rPos)/obj.nr_samples;
+            
+            isl_lin = 2*sum(rAbs.^2,1)/obj.nr_samples;
+            isl_dB = 10*log10(isl_lin);
+            
+            isl_dB = permute(isl_dB, [2,3,1]);
         end
     end
 end

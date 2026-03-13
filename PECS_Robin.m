@@ -1,11 +1,11 @@
 clc;clear;close all;
 
 % Parmeters
-MaxIter = 1e4;
+MaxIter = 10*(2^4)^3;
 
 % Initialization
-nSamples = 100;
-polyOrder = 4;
+nSamples = 2^4;
+polyOrder = 5;
 pthNorm = 2;
 
 tic;

@@ -11,8 +11,8 @@ fig = {};
 file = uigetfile('*.mat', "Select Data", "02_Data");
 load("02_Data\" + string(file));
 
-cdmm = reorder(cdmm, nr_monte_carlos, samples, poly_order);
-pecs = reorder(pecs, nr_monte_carlos, samples, poly_order);
+cdmm = reorder(cdmm, 1, samples, poly_order);
+pecs = reorder(pecs, 1, samples, poly_order);
 
 cdmm_mean = mean(cdmm, 3);
 pecs_mean = mean(pecs, 3);
@@ -23,8 +23,9 @@ fig{end+1} = figure("Name", "Runtime Samples");
 order_label = "Order: " + string(poly_order);
 type_label = ["CDMM", "PECS"];
 labels = type_label + " " + order_label;
-semilogy(samples, cdmm_mean, '-o'); hold on; 
-semilogy(samples, pecs_mean, '-o');
+semilogy(samples, cdmm_mean, '-s'); hold on; 
+semilogy(samples, pecs_mean, '-.^');
+ylim([1e-4, 1e2])
 ylabel("Runtime (s)");
 xlabel("Number of Samples (-)")
 % x = [samples; flip(samples)];
@@ -35,14 +36,16 @@ xlabel("Number of Samples (-)")
 % fill(x,y(:,1), hex2rgb("#D37611"), "FaceAlpha", 0.1, "EdgeAlpha", 0)
 % fill(x,y(:,2), hex2rgb("#005287"), "FaceAlpha", 0.1, "EdgeAlpha", 0)
 
-legend(labels(:), "Location","best");
+legend(labels(:), "Location","best", "Box","off", "NumColumns", 2);
 
-box on; grid on; 
+box on; %grid on; 
 
 for i = 1:numel(fig)
-    figure_handler.PrepareEmf(fig{i}, "colorList",["#005287", "#D37611", "#00934B"]);
+    figure_handler.PreparePdf(fig{i}, "colorList",["#005287", "#D37611", "#00934B"]);
 end
+figure_handler.GenerateOutputs();
 clear ans;
+
 
 
 

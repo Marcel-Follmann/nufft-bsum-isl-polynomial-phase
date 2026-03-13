@@ -17,7 +17,7 @@ classdef PECS < handle
         end
 
         function [xUpdate, aUpdate] = perfectSquare(obj, x, a)
-            phaseReference = angle(x);
+            phaseReference = unwrap(angle(x));
             magnitudeReference = abs(x);
 
             vSamples(:,1) = 1:obj.params.nr_samples;
@@ -33,15 +33,12 @@ classdef PECS < handle
             A = 2*wCos .* V;
             
             % Match Model
-            [aUpdate, flag] = lsqr(A,-b, 1e-3);
-            if flag > 0
-                msg = sprintf("Tolerance for lsqr calculation too tight. Error Code: %d", flag);
-                warning("PECS:Perfect_Square_Calculation", msg);
-            end
+            aUpdate = A \ (-b);
+            % [aUpdate, ~] = lsqr(A, -b, 1e-3);
             xUpdate = obj.params.generate_signal(aUpdate);
         end
 
-        function mpsl(obj, x0, a0, options)
+        function a = run(obj, x0, a0, options)
             arguments
                 obj, 
                 x0, 
@@ -76,12 +73,12 @@ classdef PECS < handle
             rAbs = abs(rPos);
 
             % Normalize Sidelobes
-            t = norm(rAbs, obj.params.p_norm) + eps;
+            t = norm(rAbs, obj.params.p_norm) + 1e-5; %eps;
             rho = rAbs ./ t;
 
             % Weights / Curvature terms
-            a = (1 + (obj.params.nr_params-1).*rho.^obj.params.nr_params - obj.params.nr_params.*rho.^(obj.params.nr_params-1)) ./ (t - rAbs).^2;
-            w = 0.5*obj.params.nr_params/t^2 .* rho.^(obj.params.nr_params-2);
+            a = (1 + (obj.params.nr_params-1).*rho.^obj.params.p_norm - obj.params.p_norm.*rho.^(obj.params.p_norm-1)) ./ (t - rAbs).^2;
+            w = 0.5*obj.params.p_norm/t^2 .* rho.^(obj.params.p_norm-2);
 
             % Bound maximum Eigenvalue
             lagScale = (obj.params.nr_samples-1:-1:1).';
