@@ -1,0 +1,9 @@
+[submodule "99_Utilities/+oNufft"]
+	path = 99_Utilities/+oNufft
+	url = https://github.com/Marcel-Follmann/oNufft
+[submodule "99_Utilities/+Datalogger"]
+	path = 99_Utilities/+Datalogger
+	url = https://github.com/Marcel-Follmann/Datalogger
+[submodule "99_Utilities/+Figurehandler"]
+	path = 99_Utilities/+Figurehandler
+	url = https://github.com/Marcel-Follmann/FigureHandler
