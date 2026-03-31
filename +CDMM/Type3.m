@@ -21,7 +21,7 @@ classdef Type3 < handle
 
             obj.smoothness  = obj.calculate_smoothness();
             obj.d_range = obj.calculate_d_range();
-		end
+        end
 
         function a = run(obj, a, options)
 			arguments
@@ -49,7 +49,21 @@ classdef Type3 < handle
                         a_grid = options.a_range(1):dA:options.a_range(end);
                         a_range = options.a_range;
                     else
-                        a_grid = a(p) + dA*(-obj.params.nr_samples^2/2:obj.params.nr_samples^2/2).';
+                        tmp = obj.params.nr_samples^3 * log(obj.params.tol);
+                        N = 2^ceil(log2(abs(tmp) / log(abs(tmp))));
+                        %clear tmp;
+
+                        f = unique(factor(p-1));
+                        if isscalar(f)
+                            period = 2*pi/f;
+                        else
+                            period = 2*pi;
+                        end
+                        
+                        if N*dA > period
+                            N = 2^ceil(log2(pi/dA));
+                        end
+                        a_grid = a(p) + dA*(-N/2:N/2).';
                         a_range = [a_grid(1), a_grid(end)];
                     end
 

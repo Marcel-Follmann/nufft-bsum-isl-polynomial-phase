@@ -3,9 +3,9 @@ close all; clearvars; clc;
 addpath(".\");
 addpath("01_Figures\");
 addpath("02_Data\");
-addpath("99_Utilities\utils\");
+addpath("99_Utilities\");
 
-figure_handler = FigureHandler("savePath","01_Figures\");
+figure_handler = Figurehandler.Create("savePath","01_Figures\");
 fig = {};
 
 cdmm = load("02_Data\cdmm_performance.mat");
@@ -20,7 +20,8 @@ isl_dB_pecs = get_isl(pecs.a, pecs.params);
 
 fig{end+1} = figure("Name", "ISL in Coordinate"); 
 % theta = linspace(0, 2*pi, 1e4);
-theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 1e4);
+p = numel(cdmm.isl)+1;
+theta = linspace(cdmm.isl(end).s_range(1), cdmm.isl(end).s_range(2), 1e6);
 plot(theta/(pi), 10*log10(real(cdmm.isl(end).interpolate(theta))), '-', "DisplayName","ISL");hold on; 
 plot(a_mm(1,:)/pi, isl_dB_cdmm(1,:), 'o', "DisplayName","Startposition");
 plot(a_mm(:,1)/pi, isl_dB_cdmm(:,1), '.', "DisplayName","Path");
@@ -29,7 +30,7 @@ plot(a_mm(:,2:end)/pi, isl_dB_cdmm(:,2:end), '.', "HandleVisibility","off");
 % xlim([0,1]);
 % xticks([0,.25, .5, .75,1, 1.25, 1.5, 1.75, 2]);
 % xticklabels({"$0$", "$\frac{\pi}{4}$", "$\frac{\pi}{2}$", "$\frac{3\pi}{4}$", "$\pi$"})
-xlabel("$a_p$ (-)");
+xlabel("$a_" + num2str(p) + " / \pi$ (-)");
 ylabel("ISL (dB)");
 legend("Location","northeast", "NumColumns", 2, "Box","off")
 box on; %grid on; 
@@ -44,6 +45,18 @@ xlabel("Number of MM steps (-)")
 lgd = legend(label, "Location","best", "Box","off");
 lgd.IconColumnWidth = 5;
 
+fig{end+1} = figure("Name","ACF");
+N = cdmm.params.nr_samples;
+f = -N:N-1;
+r_start = get_signal(cdmm.a(:,1), cdmm.params);
+r_cdmm = get_signal(cdmm.a(:,end), cdmm.params);
+r_pecs = get_signal(pecs.a(:,end), pecs.params);
+plot(f,20*log10(r_start), "DisplayName","Start Params"); hold on; 
+plot(f,20*log10(r_cdmm), "DisplayName","CDMM"); 
+plot(f,20*log10(r_pecs), "DisplayName","PECS");
+ylim([-100, 0]);
+legend("Location","best")
+
 % fig{end+1} = figure("Name", "Convergence Plot Zoom"); 
 % label = "CDMM: Candidate " + string(2:cdmm.params.nr_candidates);
 % semilogx(isl_dB_cdmm(:,2:end));
@@ -53,12 +66,23 @@ lgd.IconColumnWidth = 5;
 % lgd = legend(label, "Location","best", "Box","off");
 % lgd.IconColumnWidth = 5;
 
-figure_handler.PrepareEmf(fig{1});%, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
+figure_handler.PrepareSvg(fig{1});%, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
 for i = 2:numel(fig)
-    figure_handler.PrepareEmf(fig{i});%, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
+    figure_handler.PrepareSvg(fig{i});%, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
 end
 clear ans
 figure_handler.GenerateOutputs();
+
+function rAbs = get_signal(a, params)
+    samples(:,1) = 1:params.nr_samples;
+    V = samples .^ (0:params.nr_params-1); % Vandermonde
+    phase = pagemtimes(V,a);
+    
+    x = exp(1i*phase);
+    F = fft(x, 2*params.nr_samples, 1); % 2N for Aperiodic ACF
+    rCirc = ifftshift(ifft(abs(F).^2, [],1));
+    rAbs = abs(rCirc)/params.nr_samples;
+end
 
 function isl_dB = get_isl(a, params)
     samples(:,1) = 1:params.nr_samples;

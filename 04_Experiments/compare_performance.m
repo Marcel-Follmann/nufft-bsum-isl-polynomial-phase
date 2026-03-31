@@ -2,13 +2,13 @@ close all; clearvars; clc;
 
 addpath(".\");
 addpath("02_Data\");
-addpath("99_Utilities\utils\");
+addpath("99_Utilities");
 rng("shuffle");
 
-n_samples = 2^4;%2^7;
-n_poly_order = 3;%5;
-n_max_iters = 1e2;%10*n_samples^3;
-tolerance = 1e-4;
+n_samples = 2^7;
+n_poly_order = 4;
+n_max_iters = n_samples^2;
+tolerance = 1e-6;
 
 params = Params(...
     "nr_samples", n_samples, ...

@@ -3,9 +3,9 @@ close all; clearvars; clc;
 addpath(".\");
 addpath("02_Data\");
 addpath("01_Figures\");
-addpath("99_Utilities\utils\");
+addpath("99_Utilities\");
 
-figure_handler = FigureHandler("savePath","01_Figures\");
+figure_handler = Figurehandler.Create("savePath","01_Figures\");
 fig = {};
 
 file = uigetfile('*.mat', "Select Data", "02_Data");
