@@ -63,13 +63,7 @@ classdef Params
             x = exp(1i*phase);
         end
 
-        function isl_dB = compute_isl_dB(obj,a)
-            samples = (1:obj.nr_samples).';
-            V = samples .^ (0:obj.nr_params-1); % Vandermonde
-            phase = pagemtimes(V,a);
-
-			x = exp(1i*phase);
-    
+        function isl_dB = compute_isl_dB(obj,x)   
             F = fft(x, 2*obj.nr_samples, 1); % 2N for Aperiodic ACF
             rCirc = ifft(abs(F).^2, [],1);
             rPos = rCirc(2:obj.nr_samples,:,:); % lags 1, .., nSamples-1
@@ -79,6 +73,49 @@ classdef Params
             isl_dB = 10*log10(isl_lin);
             
             isl_dB = permute(isl_dB, [2,3,1]);
+        end
+
+        function r = compute_autocorr(obj, x, options)
+            arguments
+                obj 
+                x 
+                options.symmetric = true 
+            end
+            N = length(x);
+            zp = [x; zeros(N,1)];
+            c = ifft(abs(fft(zp)).^2);
+            if options.symmetric
+                r = [flip(c(2:N)); c(1:N)]/N;
+            else
+                r = c(1:N)/N;
+            end
+            
+        end
+
+        function AFn = compute_ambiguity_function(obj, x, tauVec, nuVec)
+            N = numel(x);
+            AF = zeros(length(tauVec), length(nuVec));
+            n = (0:N-1).';
+            for itau = 1:length(tauVec)
+                tau = tauVec(itau);
+                
+                if tau >= 0
+                    x1 = x(1+tau:N);
+                    x2 = x(1:N-tau);
+                    n_use = n(1:length(x1));
+                else
+                    t = -tau;
+                    x1 = x(1:N-t);
+                    x2 = x(1+t:N);
+                    n_use = n(1:length(x1));
+                end
+                
+                for inu = 1:length(nuVec)
+                    nu = nuVec(inu);
+                    AF(itau,inu) = sum(x1 .* conj(x2) .* exp(1j*2*pi*nu*n_use));
+                end
+            end
+            AFn = abs(AF) / max(abs(AF(:)));
         end
     end
 end

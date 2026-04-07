@@ -45,7 +45,7 @@ classdef Quadratic < handle
 
             if ~isnan(options.a_range)
                 if obj.params.nr_candidates > 1
-                    a_grid = linspace(options.a_range(1),options.a_range(2), 20*obj.params.nr_candidates);
+                    a_grid = linspace(options.a_range(1),options.a_range(2), obj.params.nr_candidates);
                 else
                     a_grid = a(3);
                 end
@@ -57,7 +57,8 @@ classdef Quadratic < handle
             end
             
             % Select multiple MM candidates
-            a_mm = obj.select_mm_candidates(obj.f, a_grid);
+            [~, idx_a] = min(real(obj.f.interpolate(a_grid)));
+            a_mm = a_grid(idx_a);
 
             logger.log( ...
                 "isl",  obj.f, ...
@@ -110,16 +111,16 @@ classdef Quadratic < handle
                 candidates 
             end
 
-            if obj.params.nr_candidates > 1
-                [~, idx_a] = findpeaks(- real(f.interpolate(candidates)), "NPeaks", obj.params.nr_candidates, "SortStr","descend");
-                if numel(idx_a) < obj.params.nr_candidates
-                    warning("CDMM: Could not find the required nr of MM candidates");
-                end
-                a_mm        = [ candidates(idx_a) ];
-            else
+            % if obj.params.nr_candidates > 1
+            %     [~, idx_a] = findpeaks(- real(f.interpolate(candidates)), "NPeaks", obj.params.nr_candidates, "SortStr","descend");
+            %     if numel(idx_a) < obj.params.nr_candidates
+            %         warning("CDMM: Could not find the required nr of MM candidates");
+            %     end
+            %     a_mm        = [ candidates(idx_a) ];
+            % else
                 [~, idx_a] = min(real(f.interpolate(candidates)));
                 a_mm = candidates(idx_a);
-            end
+            % end
         end
 
         function smoothness = calculate_smoothness(obj)

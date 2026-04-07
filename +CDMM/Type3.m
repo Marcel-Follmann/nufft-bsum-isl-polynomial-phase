@@ -46,7 +46,12 @@ classdef Type3 < handle
                     % NUFFT for ISL and dISL/da
                     dA = pi/max(d_p);
                     if ~isnan(options.a_range)
-                        a_grid = options.a_range(1):dA:options.a_range(end);
+                        if obj.params.nr_candidates > 1
+                            a_grid = linspace(options.a_range(1),options.a_range(2), obj.params.nr_candidates);
+                        else
+                            a_grid = a(3);
+                        end
+
                         a_range = options.a_range;
                     else
                         tmp = obj.params.nr_samples^3 * log(obj.params.tol);
@@ -63,8 +68,9 @@ classdef Type3 < handle
                         if N*dA > period
                             N = 2^ceil(log2(pi/dA));
                         end
-                        a_grid = a(p) + dA*(-N/2:N/2).';
-                        a_range = [a_grid(1), a_grid(end)];
+
+                        a_range = a(p) - dA*[-N/2;N/2];
+                        a_grid = linspace(a_range(1),a_range(2), obj.params.nr_candidates);
                     end
 
                     f = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol/40);
@@ -72,8 +78,9 @@ classdef Type3 < handle
                     f.apply(d_p, g_p);
                     df.apply(d_p, 1i*d_p.*g_p);
                     
-                    % Select multiple MM candidates
-                    a_mm = obj.select_mm_candidates(f, a_grid);
+                    % Select MM candidates
+                    [~, idx_a] = min(real(f.interpolate(a_grid)));
+                    a_mm = a_grid(idx_a);
 
                     logger.log( ...
                         "isl",  f, ...
