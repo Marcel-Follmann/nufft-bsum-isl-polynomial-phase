@@ -7,7 +7,7 @@ file = uigetfile('*.mat', "Select Data", "02_Data");
 load("02_Data\" + string(file));
 
 reorder = @(data) reorder_data(data, [3, 2, 1], ...
-    nr_monte_carlos, poly_order, samples);
+    nr_monte_carlos, poly_order, samples); % Resembles for loop order in experiments file
 
 isl_cdmm = reorder(isl_cdmm);
 isl_pecs = reorder(isl_pecs);
