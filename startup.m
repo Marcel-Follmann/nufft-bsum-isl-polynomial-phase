@@ -1,8 +1,9 @@
 close all; clearvars; clc; 
 
-addpath(genpath(pwd));
-git_repo_check();
 clean_asv_data();
+check_untracked_folders();
+git_repo_check();
+addpath(genpath(pwd));
 
 function git_repo_check()
     % Get the status of the repository
@@ -35,5 +36,14 @@ function clean_asv_data()
     files = dir(fullfile(pwd, '**', '*.asv'));
     for k = 1:length(files)
         delete(fullfile(files(k).folder, files(k).name));
+    end
+end
+
+function check_untracked_folders()
+    folders = {'01_Figures\', '02_Data\'};
+    for i = 1:numel(folders)
+        if ~exist(folders{i}, 'dir')
+            mkdir(folders{i});
+        end
     end
 end
