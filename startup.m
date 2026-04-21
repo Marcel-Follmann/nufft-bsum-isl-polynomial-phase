@@ -2,6 +2,7 @@ close all; clearvars; clc;
 
 addpath(genpath(pwd));
 git_repo_check();
+clean_asv_data();
 
 function git_repo_check()
     % Get the status of the repository
@@ -27,5 +28,12 @@ function git_repo_check()
         if isempty(strtrim(statusMsg))
             disp('✅ The repository is up to date!');
         end
+    end
+end
+
+function clean_asv_data()
+    files = dir(fullfile(pwd, '**', '*.asv'));
+    for k = 1:length(files)
+        delete(fullfile(files(k).folder, files(k).name));
     end
 end

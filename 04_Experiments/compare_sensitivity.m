@@ -1,6 +1,5 @@
 close all; clearvars; clc; 
 
-addpath("99_Utilities");
 fh = Figurehandler.Create("savePath","01_Figures\");
 f = {};
 

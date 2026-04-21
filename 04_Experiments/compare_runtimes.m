@@ -1,9 +1,5 @@
 close all; clearvars; clc; 
 
-addpath(".\");
-addpath("02_Data\");
-addpath("99_Utilities\");
-
 nr_monte_carlo = 1000;
 nr_samples(:,1) = 32:32:256;
 poly_order(:,1) = (3:5);

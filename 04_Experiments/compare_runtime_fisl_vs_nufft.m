@@ -1,9 +1,5 @@
 close all; clearvars; clc; 
 
-addpath(".\");
-addpath("02_Data\");
-addpath("99_Utilities\");
-
 fh = Figurehandler.Create("savePath","01_Figures\");
 f = {};
 colorlist = flip(["#00934B", "#D37611", "#005287"]);

@@ -1,10 +1,5 @@
 close all; clearvars; clc; 
 
-addpath(".\");
-addpath("01_Figures\");
-addpath("02_Data\");
-addpath("99_Utilities\");
-
 figure_handler = Figurehandler.Create("savePath","01_Figures\");
 fig = {};
 

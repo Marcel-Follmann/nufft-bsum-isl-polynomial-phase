@@ -1,8 +1,5 @@
 close all; clearvars; clc; 
 
-addpath(".\");
-addpath("02_Data\");
-addpath("99_Utilities");
 rng("shuffle");
 
 n_samples = 100;
