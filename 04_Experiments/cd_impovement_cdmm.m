@@ -14,8 +14,6 @@ MC = 100;
 nr_samples = [16; 32; 64];
 nr_params = 5;
 
-
-
 T = table();
 for k = 1:numel(nr_samples)
     for mc = 1:MC

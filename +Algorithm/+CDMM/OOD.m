@@ -1,4 +1,4 @@
-classdef Quadratic < handle
+classdef OOD < handle
 
     properties (Access = private)
 		params Algorithm.Params
@@ -13,7 +13,7 @@ classdef Quadratic < handle
    	end
 
 	methods
-		function obj = Quadratic(params)
+		function obj = OOD(params)
 			arguments
 				params Algorithm.Params
             end

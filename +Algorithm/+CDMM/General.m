@@ -1,4 +1,4 @@
-classdef Type3 < handle
+classdef General < handle
 
     properties (Access = private)
 		params Algorithm.Params
@@ -11,7 +11,7 @@ classdef Type3 < handle
    	end
 
 	methods
-		function obj = Type3(params)
+		function obj = General(params)
 			arguments
 				params Algorithm.Params
             end
