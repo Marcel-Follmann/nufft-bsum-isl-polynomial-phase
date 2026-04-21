@@ -6,13 +6,13 @@ classdef FISL < handle
 % implementation. See Algorithm 4 and Eqs. (25)-(46).
 
     properties (Access = private)
-        params Params
+        params Algorithm.Params
     end
 
     methods (Access=public)
         function obj = FISL(params)
             arguments
-				params Params
+				params Algorithm.Params
             end
             obj.params = params;
         end

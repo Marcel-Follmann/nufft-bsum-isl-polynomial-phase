@@ -5,21 +5,21 @@ addpath("02_Data\");
 addpath("99_Utilities");
 rng("shuffle");
 
-n_samples = 2^7;
-n_poly_order = 4;
-n_max_iters = n_samples^2;
-tolerance = 1e-6;
+n_samples = 100;
+n_poly_order = 3;
+n_max_iters = 1e5;
+tolerance = 1e-7;
 
-params = Params(...
+params = Algorithm.Params(...
     "nr_samples", n_samples, ...
     "nr_params",n_poly_order, ...
     "max_mm_iters",n_max_iters, ...
     "tol", tolerance, ...
-    "nr_candidates",1 ...
+    "nr_candidates",501 ...
     );
 
-pecs = PECS(params);
-cdmm = CDMM.Type3(params);
+pecs = Algorithm.PECS(params);
+cdmm = Algorithm.CDMM.General(params);
 
 [x0, a0] = params.get_random_sequence();
 a0 = mod(a0, 2*pi); % as this is periodic

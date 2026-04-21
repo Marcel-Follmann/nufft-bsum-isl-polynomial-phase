@@ -11,8 +11,8 @@ fig = {};
 file = uigetfile('*.mat', "Select Data", "02_Data");
 load("02_Data\" + string(file));
 
-cdmm = reorder(cdmm, 1, samples, poly_order);
-pecs = reorder(pecs, 1, samples, poly_order);
+cdmm = reorder(cdmm, nr_monte_carlos, samples, poly_order);
+pecs = reorder(pecs, nr_monte_carlos, samples, poly_order);
 
 cdmm_mean = mean(cdmm, 3);
 pecs_mean = mean(pecs, 3);
@@ -45,11 +45,6 @@ for i = 1:numel(fig)
 end
 figure_handler.GenerateOutputs();
 clear ans;
-
-
-
-
-
 
 function x = reorder(x, nr_monte_carlos, samples, poly_order)
     x = permute( ...

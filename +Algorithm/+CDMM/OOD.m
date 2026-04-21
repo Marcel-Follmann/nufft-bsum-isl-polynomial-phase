@@ -1,7 +1,7 @@
 classdef Quadratic < handle
 
     properties (Access = private)
-		params Params
+		params Algorithm.Params
 
 		d
         g
@@ -15,7 +15,7 @@ classdef Quadratic < handle
 	methods
 		function obj = Quadratic(params)
 			arguments
-				params Params
+				params Algorithm.Params
             end
 			obj.params = params;
 

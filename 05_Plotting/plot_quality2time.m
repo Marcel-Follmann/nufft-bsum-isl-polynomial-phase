@@ -1,24 +1,19 @@
 close all; clearvars; clc; 
 
-
-
-
-addpath(".\");
-addpath("02_Data\");
-addpath("01_Figures\");
-addpath("99_Utilities\utils\");
-
-figure_handler = FigureHandler("savePath","01_Figures\");
+figure_handler = Figurehandler.Create("savePath","01_Figures\");
 fig = {};
 
 file = uigetfile('*.mat', "Select Data", "02_Data");
 load("02_Data\" + string(file));
 
-isl_cdmm = reorder(isl_cdmm, nr_monte_carlos, samples, poly_order);
-isl_pecs = reorder(isl_pecs, nr_monte_carlos, samples, poly_order);
+reorder = @(data) reorder_data(data, [3, 2, 1], ...
+    nr_monte_carlos, poly_order, samples);
 
-time_cdmm = reorder(time_cdmm, nr_monte_carlos, samples, poly_order);
-time_pecs = reorder(time_pecs, nr_monte_carlos, samples, poly_order);
+isl_cdmm = reorder(isl_cdmm);
+isl_pecs = reorder(isl_pecs);
+time_cdmm = reorder(time_cdmm);
+time_pecs = reorder(time_pecs);
+
 isl_pecs(time_pecs > 10) = NaN;
 time_pecs(time_pecs > 10) = NaN;
 
@@ -45,14 +40,3 @@ end
 figure_handler.GenerateOutputs();
 clear ans;
 
-
-
-
-
-
-
-function x = reorder(x, nr_monte_carlos, samples, poly_order)
-    x = permute( ...
-        reshape(x, nr_monte_carlos,  numel(poly_order), numel(samples)), ...
-        [3,2,1]);
-end

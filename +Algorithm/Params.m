@@ -22,7 +22,7 @@ classdef Params
 				params.nr_samples       (1,1) double {mustBePositive}               % Sequence Length
 				params.nr_params        (1,1) double {mustBePositive}               % Number of Parameters
                 params.nr_neighbors     (1,1) double {mustBePositive}       = 4     % Number of neighbors to include for interpolation
-                params.nr_candidates    (1,1) double {mustBePositive}       = 30    % Number of minima to pursue
+                params.nr_candidates    (1,1) double {mustBePositive}       = 501   % Number of minima to pursue
                 params.max_mm_iters     (1,1) double {mustBePositive}       = 1e3   % Maximum number of MM steps
                 params.nr_cd_iterations (1,1) double {mustBePositive}       = 1     % Number of complete CD iterations
                 params.oversampling     (1,1) double {mustBePositive}       = 2     % Oversampling for NUFFT
@@ -42,7 +42,7 @@ classdef Params
 
         function [x0, a0] = get_random_sequence(obj)
             % [x0, a0] Generate a sequence with a random code reference
-            mCode = PhaseCodeType.Random;
+            mCode = Algorithm.internal.PhaseCodeType.Random;
             signal = mCode.generate(obj.nr_samples);
             phaseReference = unwrap(angle(signal));
             vSamples = (1:obj.nr_samples).';

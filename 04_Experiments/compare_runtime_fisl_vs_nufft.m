@@ -9,26 +9,24 @@ f = {};
 colorlist = flip(["#00934B", "#D37611", "#005287"]);
 
 %% Parameters
-MC = 1e3;
+MC = 1000;
 nr_samples = 32:32:256; 
-precision = 0.1;
-confidence = 0.68;
 
 T = table();
 %% Simulation
 for i = 1:numel(nr_samples)
-    params = Params(...
+    params = Algorithm.Params(...
     "nr_samples", nr_samples(i), ...
     "nr_params",3, ...
     "max_mm_iters",1e3, ...
-    "tol", 1e-4, ...
-    "nr_candidates",50 ...
+    "tol", 1e-7, ...
+    "nr_candidates",501 ...
     );
 
     % Initialization
-    cdmm = CDMM.Type3(params);
-    cdmm_ood = CDMM.Quadratic(params);
-    fisl = FISL(params);
+    cdmm = Algorithm.CDMM.General(params);
+    cdmm_ood = Algorithm.CDMM.OOD(params);
+    fisl = Algorithm.FISL(params);
     
     fprintf("P: %d ...", nr_samples(i));
     

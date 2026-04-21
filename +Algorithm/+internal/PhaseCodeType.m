@@ -18,35 +18,35 @@ classdef PhaseCodeType
     methods (Access = public)
         function signal = generate(type, nSamples)
             arguments
-                type (1,1) PhaseCodeType
+                type (1,1) Algorithm.internal.PhaseCodeType
                 nSamples (1,1) double {mustBePositive}
             end
             switch type
-                case PhaseCodeType.Frank
+                case Algorithm.internal.PhaseCodeType.Frank
                     signal = type.genFrank(nSamples);
-                case PhaseCodeType.Golomb
+                case Algorithm.internal.PhaseCodeType.Golomb
                     signal = type.genGolomb(nSamples);
-                case PhaseCodeType.P1
+                case Algorithm.internal.PhaseCodeType.P1
                     signal = type.genP1(nSamples);
-                case PhaseCodeType.P2
+                case Algorithm.internal.PhaseCodeType.P2
                     signal = type.genP2(nSamples);
-                case PhaseCodeType.PX
+                case Algorithm.internal.PhaseCodeType.PX
                     signal = type.genPX(nSamples);
-                case PhaseCodeType.P4
+                case Algorithm.internal.PhaseCodeType.P4
                     signal = type.genP4(nSamples);
-                case PhaseCodeType.ZadoffChu
+                case Algorithm.internal.PhaseCodeType.ZadoffChu
                     signal = type.genZadoffChu(nSamples);
-                case PhaseCodeType.Random
+                case Algorithm.internal.PhaseCodeType.Random
                     signal = type.genRandom(nSamples);
-                case PhaseCodeType.Barker
+                case Algorithm.internal.PhaseCodeType.Barker
                     signal = type.genBarker(nSamples);
-                case PhaseCodeType.MSeq
+                case Algorithm.internal.PhaseCodeType.MSeq
                     signal = type.genMSeq(nSamples);
-                case PhaseCodeType.Gold
+                case Algorithm.internal.PhaseCodeType.Gold
                     signal = type.genGold(nSamples);
-                case PhaseCodeType.Kasami
+                case Algorithm.internal.PhaseCodeType.Kasami
                     signal = type.genKasami(nSamples);
-                case PhaseCodeType.AllOne
+                case Algorithm.internal.PhaseCodeType.AllOne
                     signal = type.genAllOne(nSamples);
 
                 otherwise

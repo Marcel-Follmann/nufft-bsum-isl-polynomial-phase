@@ -1,9 +1,9 @@
 close all; clearvars; clc; 
 
-nr_monte_carlo = 50;
-nr_samples(:,1) = 16:4:32; %2.^(4:7); % max 8
-poly_order(:,1) = (3:5); % max 4
-tol = 1e-4;
+nr_monte_carlo = 1000;
+nr_samples(:,1) = 32:32:256;
+poly_order(:,1) = (3:5);
+tol = 1e-7;
 
 data_logger = Datalogger.Create("file_name","time2quality_analysis", "add_timestamp",true);
 data_logger.log(...
@@ -18,24 +18,24 @@ for idx_samples = 1:numel(nr_samples)
         fprintf("Samples: %d, Order: %d -> ", nr_samples(idx_samples), poly_order(idx_poly_order));
         
         % Prepare Methods
-        params = Params(...
+        params = Algorithm.Params(...
             "nr_samples",nr_samples(idx_samples), ...
             "nr_params", poly_order(idx_poly_order), ...
             "max_mm_iters", nr_samples(idx_samples)^3, ...
             "tol", tol, ...
-            "nr_candidates",1 ...
+            "nr_candidates",501 ...
             );
 
         for i = 1:nr_monte_carlo
             [x0, a0] = params.get_random_sequence();
 
-            cdmm = CDMM.Type3(params);
+            cdmm = Algorithm.CDMM.General(params);
             tic; 
             a = cdmm.run(a0);
             time_cdmm(i) = toc;
             isl_cdmm(i) = params.compute_isl_dB(a);
             
-            pecs = PECS(params);
+            pecs = Algorithm.PECS(params);
             
             a = a0;
             x = x0;
@@ -51,13 +51,14 @@ for idx_samples = 1:numel(nr_samples)
                     break;
                 end
             end
-            fprintf(".");
+            if mod(i, nr_monte_carlo/100) == 0
+                fprintf(".");
+            end
         end
         data_logger.log("time_cdmm", time_cdmm, "isl_cdmm", isl_cdmm, "time_pecs", time_pecs, "isl_pecs", isl_pecs);
         fprintf("\n");
     end
 end
-
 clearvars;
 
 

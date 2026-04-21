@@ -1,7 +1,7 @@
 classdef Type3 < handle
 
     properties (Access = private)
-		params Params
+		params Algorithm.Params
 
 		d
         g
@@ -13,7 +13,7 @@ classdef Type3 < handle
 	methods
 		function obj = Type3(params)
 			arguments
-				params Params
+				params Algorithm.Params
             end
 			obj.params = params;
 
@@ -54,8 +54,8 @@ classdef Type3 < handle
 
                         a_range = options.a_range;
                     else
-                        tmp = obj.params.nr_samples^3 * log(obj.params.tol);
-                        N = 2^ceil(log2(abs(tmp) / log(abs(tmp))));
+                        tmp = numel(g_p) * log10(1/obj.params.tol);
+                        N = ceil(tmp / log(tmp));
                         %clear tmp;
 
                         f = unique(factor(p-1));
@@ -66,10 +66,10 @@ classdef Type3 < handle
                         end
                         
                         if N*dA > period
-                            N = 2^ceil(log2(pi/dA));
+                            N = ceil(pi/dA);
                         end
 
-                        a_range = a(p) - dA*[-N/2;N/2];
+                        a_range = a(p) + dA*[-N/2;N/2];
                         a_grid = linspace(a_range(1),a_range(2), obj.params.nr_candidates);
                     end
 
@@ -100,7 +100,7 @@ classdef Type3 < handle
                             break; % Out of reach for save NUFFT interpolation
                         end
 
-                        if all([abs(tangent / obj.smoothness(p-2)) < obj.params.tol, i > 1])
+                        if all([abs(a_step) < obj.params.tol, i > 1])
                             break; % No more progress
                         end
 

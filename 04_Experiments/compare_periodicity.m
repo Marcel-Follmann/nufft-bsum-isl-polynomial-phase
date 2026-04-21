@@ -4,8 +4,8 @@ addpath("99_Utilities");
 fh = Figurehandler.Create("savePath","01_Figures\");
 f = {};
 
-vec_poly_order = 3:8;
-nr_samples = 4;
+vec_poly_order = 3:5;
+nr_samples = 6;
 
 
 for i = 1:numel(vec_poly_order)
@@ -15,14 +15,14 @@ for i = 1:numel(vec_poly_order)
     "poly_order", vec_poly_order(i) ...
     );
 
-    params = Params(...
+    params = Algorithm.Params(...
         "nr_samples",nr_samples, ...
         "nr_params", vec_poly_order(i), ...
         "tol", 1e-6, ...
         "nr_candidates", 1 ...
         );
 
-    cdmm = CDMM.Type3(params);
+    cdmm = Algorithm.CDMM.General(params);
 
     a0 = zeros(vec_poly_order(i), 1);%[x0, a0] = params.get_random_sequence();
     a_cdmm = cdmm.run(a0, "data_logger",data_logger(i), "a_range",[0, 2*pi]);

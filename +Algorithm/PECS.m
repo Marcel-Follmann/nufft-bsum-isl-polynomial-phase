@@ -1,7 +1,7 @@
 classdef PECS < handle
 
     properties
-        params Params = Params.empty
+        params Algorithm.Params = Algorithm.Params.empty
     end
 
     properties (SetAccess = protected)
@@ -11,7 +11,7 @@ classdef PECS < handle
     methods
         function obj = PECS(params)
             arguments
-                params Params = Params.empty
+                params Algorithm.Params = Algorithm.Params.empty
             end
             obj.params = params;
         end
