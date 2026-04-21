@@ -9,11 +9,13 @@ function git_repo_check()
     [~, summaryMsg] = system('git status -sb');
     
     % Check for untracked or uncommitted files
+    fprintf("Welcome to this repository!\nPlease make sure to read the README before working with the code.\n\n");
+
     if isempty(strtrim(statusMsg))
         disp('✔️  No uncommitted or untracked changes.');
     else
         disp('❗️ There are untracked or uncommitted files. You should commit them!');
-        %disp(statusMsg);
+        return;
     end
     
     % Check if repo is ahead or behind remote
