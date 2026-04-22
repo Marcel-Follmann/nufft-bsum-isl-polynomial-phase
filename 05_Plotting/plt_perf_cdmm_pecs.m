@@ -3,13 +3,17 @@ close all; clearvars; clc;
 figure_handler = Figurehandler.Create("savePath","01_Figures\");
 fig = {};
 
-cdmm = load("02_Data\cdmm_performance.mat");
-pecs = load("02_Data\pecs_performance.mat");
+cdmm = load("02_Data\perf\perf_cdmm.mat");
+pecs = load("02_Data\perf\perf_pecs.mat");
 
 % Reconstruct a over the Optimization
 [a, a_mm] = reorder_cdmm(cdmm);
-isl_dB_cdmm = get_isl(a, cdmm.params);
-isl_dB_pecs = get_isl(pecs.a, pecs.params);
+params = pecs.params;
+
+x_cdmm = params.generate_signal(a);
+x_pecs = params.generate_signal(pecs.a);
+isl_dB_cdmm = params.compute_isl_dB(x_cdmm);
+isl_dB_pecs = params.compute_isl_dB(x_pecs);
 
 % a_mm = mod(a_mm, pi);
 
@@ -36,13 +40,16 @@ lgd.IconColumnWidth = 10;
 
 fig{end+1} = figure("Name","ACF");
 N = cdmm.params.nr_samples;
-f = -N:N-1;
-r_start = get_signal(cdmm.a(:,1), cdmm.params);
-r_cdmm = get_signal(cdmm.a(:,end), cdmm.params);
-r_pecs = get_signal(pecs.a(:,end), pecs.params);
-plot(f,20*log10(r_start), "DisplayName","Initial"); hold on; 
-plot(f,20*log10(r_cdmm), "DisplayName","CDMM"); 
-plot(f,20*log10(r_pecs), "DisplayName","PECS");
+f = -N+1:N-1;
+
+
+r_start = params.compute_autocorr(x_pecs(:,1) ,"symmetric", true);
+r_cdmm = params.compute_autocorr(x_cdmm(:,end) ,"symmetric", true);
+r_pecs = params.compute_autocorr(x_pecs(:,end) ,"symmetric", true);
+
+plot(f,20*log10(abs(r_start)), "DisplayName","Initial"); hold on; 
+plot(f,20*log10(abs(r_cdmm)), "DisplayName","CDMM"); 
+plot(f,20*log10(abs(r_pecs)), "DisplayName","PECS");
 ylim([-65, 5]);
 ylabel("Magnitude (dB)");
 xlabel("Lags (-)");
@@ -55,35 +62,6 @@ for i = 2:numel(fig)
 end
 clear ans
 figure_handler.GenerateOutputs();
-
-function rAbs = get_signal(a, params)
-    samples(:,1) = 1:params.nr_samples;
-    V = samples .^ (0:params.nr_params-1); % Vandermonde
-    phase = pagemtimes(V,a);
-    
-    x = exp(1i*phase);
-    F = fft(x, 2*params.nr_samples, 1); % 2N for Aperiodic ACF
-    rCirc = ifftshift(ifft(abs(F).^2, [],1));
-    rAbs = abs(rCirc)/params.nr_samples;
-end
-
-function isl_dB = get_isl(a, params)
-    samples(:,1) = 1:params.nr_samples;
-    V = samples .^ (0:params.nr_params-1); % Vandermonde
-    phase = pagemtimes(V,a);
-    
-    x = exp(1i*phase);
-    
-    F = fft(x, 2*params.nr_samples, 1); % 2N for Aperiodic ACF
-    rCirc = ifft(abs(F).^2, [],1);
-    rPos = rCirc(2:params.nr_samples,:,:); % lags 1, .., nSamples-1
-    rAbs = abs(rPos)/params.nr_samples;
-    
-    isl_lin = 2*sum(rAbs.^2,1)/params.nr_samples;
-    isl_dB = 10*log10(isl_lin);
-    
-    isl_dB = permute(isl_dB, [2,3,1]);
-end
 
 function [a, a_mm] = reorder_cdmm(cdmm)
     a = cdmm.a(:,end-1);

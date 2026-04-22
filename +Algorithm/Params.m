@@ -52,7 +52,7 @@ classdef Params
         function x = generate_signal(obj,a)
             arguments
                 obj
-                a (:, 1)
+                a (:, :)
             end
             vSamples(:,1) = 1:obj.nr_samples;
             V = vSamples .^(0:obj.nr_params-1); % Vandermonde

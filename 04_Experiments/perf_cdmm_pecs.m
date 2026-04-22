@@ -1,30 +1,37 @@
-close all; clearvars; clc; 
+function perf_cdmm_pecs(nr_samples, poly_order, nr_max_iters, tolerance)
+    arguments
+        nr_samples (1,1) double {mustBeInteger} = 128, 
+        poly_order (1,1) double {mustBeInteger} = 3,
+        nr_max_iters (1,1) double {mustBeInteger} = 1e5,
+        tolerance (1,1) double = 1e-8
+    end
+    if isscalar(dbstack), close all; clc; end
+    fprintf("Performance Evaluation of CDMM and PECS\n");
 
-rng("shuffle");
+    rng("shuffle");
+    
+    params = Algorithm.Params(...
+        "nr_samples", nr_samples, ...
+        "nr_params",poly_order, ...
+        "max_mm_iters",nr_max_iters, ...
+        "tol", tolerance ...
+        );
+    
+    pecs = Algorithm.PECS(params);
+    cdmm = Algorithm.CDMM.General(params);
+    
+    [x0, a0] = params.get_random_sequence();
+    %a0 = mod(a0, 2*pi) - pi; % as this is periodic
+    
+    fprintf("Run PECS\n")
+    pecs.run(x0, a0, ...
+        "data_logger", Datalogger.Create("file_location", "02_Data\perf","file_name","perf_pecs"));
+    
+    fprintf("Run CDMM\n")
+    cdmm.run(a0, ...
+        "data_logger", Datalogger.Create("file_location", "02_Data\perf","file_name","perf_cdmm"));
 
-n_samples = 100;
-n_poly_order = 3;
-n_max_iters = 1e5;
-tolerance = 1e-7;
-
-params = Algorithm.Params(...
-    "nr_samples", n_samples, ...
-    "nr_params",n_poly_order, ...
-    "max_mm_iters",n_max_iters, ...
-    "tol", tolerance, ...
-    "nr_candidates",501 ...
-    );
-
-pecs = Algorithm.PECS(params);
-cdmm = Algorithm.CDMM.General(params);
-
-[x0, a0] = params.get_random_sequence();
-a0 = mod(a0, 2*pi); % as this is periodic
-
-pecs.run(x0, a0, ...
-    "data_logger", Datalogger.Create("file_name","pecs_performance"));
-
-cdmm.run(a0, ...
-    "data_logger", Datalogger.Create("file_name","cdmm_performance"));
+    if isscalar(dbstack), keyboard, end
+end
 
 
