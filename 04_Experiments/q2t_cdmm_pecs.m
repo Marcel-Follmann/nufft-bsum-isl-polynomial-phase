@@ -1,76 +1,83 @@
-close all; clearvars; clc; 
+function q2t_cdmm_pecs(nr_monte_carlo, nr_samples, poly_order)
+    arguments
+        nr_monte_carlo (1,1) double {mustBeInteger} = 10, 
+        nr_samples (:,1) double {mustBeInteger} = 32:32:256, 
+        poly_order (:,1) double {mustBeInteger} = 3:5
+    end
+    if isscalar(dbstack), close all; clc; end
+    fprintf("Quality budget runtime anylysis: CDMM vs. PECS\n");
 
-nr_monte_carlo = 1000;
-nr_samples(:,1) = 32:32:256;
-poly_order(:,1) = (3:5);
-tol = 1e-7;
-max_time = Inf;
-
-data_logger = Datalogger.Create("file_name","quality2time_analysis", "add_timestamp",true);
-data_logger.log(...
-    "nr_monte_carlos", nr_monte_carlo, ...
-    "samples", nr_samples, ...
-    "poly_order", poly_order ...
-    );
-
-
-for idx_samples = 1:numel(nr_samples)
-    for idx_poly_order = 1:numel(poly_order)
-        fprintf("Samples: %d, Order: %d -> ", nr_samples(idx_samples), poly_order(idx_poly_order));
-        
-        % Prepare Methods
-        params = Algorithm.Params(...
-            "nr_samples",nr_samples(idx_samples), ...
-            "nr_params", poly_order(idx_poly_order), ...
-            "max_mm_iters", nr_samples(idx_samples)^3, ...
-            "tol", tol, ...
-            "nr_candidates",501 ...
-            );
-
-        isl_pecs = zeros(nr_monte_carlo,1);
-        for i = 1:nr_monte_carlo
-            [x0, a0] = params.get_random_sequence();
-
-            cdmm = Algorithm.CDMM.General(params);
-            tic; 
-            a = cdmm.run(a0);
-            time_cdmm(i) = toc;
-            isl_cdmm(i) = params.compute_isl_dB(a);
+    max_time = Inf;
+    
+    data_logger = Datalogger.Create( ...
+        "file_location", "02_Data\q2t_cdmm_pecs", ...
+        "file_name", "MC_"+num2str(nr_monte_carlo)+"_q2t_cdmm_pecs", ...
+        "add_timestamp", true ...
+        );
+    
+    data_logger.log(...
+        "nr_monte_carlos", nr_monte_carlo, ...
+        "samples", nr_samples, ...
+        "poly_order", poly_order ...
+        );
+    
+    
+    for idx_samples = 1:numel(nr_samples)
+        for idx_poly_order = 1:numel(poly_order)
+            fprintf("Samples: %d, Order: %d -> ", nr_samples(idx_samples), poly_order(idx_poly_order));
             
-            pecs = Algorithm.PECS(params);
-            
-            a = a0;
-            x = x0;
-            time_pecs(i) = 0;
-            for k = 1:1e6
-                tmp = isl_pecs(i);
+            % Prepare Methods
+            params = Algorithm.Params(...
+                "nr_samples",nr_samples(idx_samples), ...
+                "nr_params", poly_order(idx_poly_order), ...
+                "max_mm_iters", nr_samples(idx_samples)^3 ...
+                );
+    
+            isl_pecs = zeros(nr_monte_carlo,1);
+            for i = 1:nr_monte_carlo
+                [x0, a0] = params.get_random_sequence();
+    
+                cdmm = Algorithm.CDMM.General(params);
                 tic; 
-                xTmp = pecs.mpslStep(x);
-
-                [x, a] = pecs.perfectSquare(xTmp, a);
-                time_pecs_tmp = toc;
-                time_pecs(i) = time_pecs(i) + time_pecs_tmp;
-                isl_pecs(i) = params.compute_isl_dB(a);
-
-                if i > 1
-                    if abs(isl_pecs(i) - tmp) < 1e-6
+                a = cdmm.run(a0);
+                time_cdmm(i) = toc;
+                isl_cdmm(i) = params.compute_isl_dB(a);
+                
+                pecs = Algorithm.PECS(params);
+                
+                a = a0;
+                x = x0;
+                time_pecs(i) = 0;
+                for k = 1:1e6
+                    tmp = isl_pecs(i);
+                    tic; 
+                    xTmp = pecs.mpslStep(x);
+    
+                    [x, a] = pecs.perfectSquare(xTmp, a);
+                    time_pecs_tmp = toc;
+                    time_pecs(i) = time_pecs(i) + time_pecs_tmp;
+                    isl_pecs(i) = params.compute_isl_dB(a);
+    
+                    if i > 1
+                        if abs(isl_pecs(i) - tmp) < 1e-6
+                            break;
+                        end
+                    end
+                    if isl_pecs(i) < isl_cdmm
+                        break;
+                    end
+                    if time_pecs(i) >= min([100*time_cdmm(i),max_time])
                         break;
                     end
                 end
-                if isl_pecs(i) < isl_cdmm
-                    break;
-                end
-                if time_pecs(i) >= min([100*time_cdmm(i),max_time])
-                    break;
-                end
+                fprintf(".");
             end
-            fprintf(".");
+            data_logger.log("time_cdmm", time_cdmm, "isl_cdmm", isl_cdmm, "time_pecs", time_pecs, "isl_pecs", isl_pecs);
+            fprintf("\n");
         end
-        data_logger.log("time_cdmm", time_cdmm, "isl_cdmm", isl_cdmm, "time_pecs", time_pecs, "isl_pecs", isl_pecs);
-        fprintf("\n");
     end
-end
 
-clearvars;
+    if isscalar(dbstack), keyboard, end
+end
 
 
