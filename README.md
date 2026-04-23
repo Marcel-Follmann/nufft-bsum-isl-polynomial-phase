@@ -1,30 +1,18 @@
-# NUFFT based ISL minimization of polynomial phase sequences
-This repositroy is the simulation-base for the paper: "Accelerated ISL Reduction of Polynomial Phase Sequences: A NUFFT-Driven Majorize-Minimize Coordinate Approach"
+# 🌟 Highlights
+- Implementation of [PECS](https://ieeexplore.ieee.org/document/9928573/), [FISL](https://www.sciencedirect.com/science/article/abs/pii/S1051200421000300), and CDMM. 
+- Runtime and performance comparison of CDMM with PECS and FISL. 
+- Sensitivity analysis of polynomial phase model
 
-## Folder Structure
+# ℹ️ Overview
+Welcome to the simulation-base for the paper: "Accelerated ISL Reduction of Polynomial Phase Sequences: A NUFFT-Driven Majorize-Minimize Coordinate Approach". 
+All simulative figures in it can be reproduced using this repo.
 
-**01_Figures**: Storage for generated figures.
+# ✍️ Author
+Hi, I'm Marcel Follmann, an early career researcher at the SPARC group in University Luxembourg. My research interests include cognitive radar, waveform optimization, control theory and signal processing as a whole.
 
-**02_Data**: Storage for generated experiment data.
+# 🚀 Usage
+1) At the start the startup.m file should be run once such that all necessary folders for figure and data storage are created. 
 
-**03_Tests**: Internal function tests.
+2) The repo is structured into different folders. Specifically the `+Algorithm` folder serves as a package to all algorithms compared in the paper. 
 
-**04_Experiments**: Pure data generation.
-+ **cd_improvement_cdmm**: How much does ISL improve in each coordinate?
-+ **mi_cdmm**: Simulate mutual interference of polynomial phase models.
-+ **perf_cdmm_pecs**: ISL results after exemplary CDMM / PECS optimizations.
-+ **q2t_cdmm_pecs**: Quality budget to runtime simulation
-    1) CDMM gives quality budget and respective runtime
-    2) Analyze runtime of PECS with given quality goal
-+ **rt_cdmm_fisl**: Plain runtime simulation of CDMM, CDMM-OOD, and FISL.
-+ **rt_cdmm_pecs**: Plain runtime simulation of CDMM and PECS.
-+ **sen_cdmm**: Sensitivity analysis of polynomial phase model.
-+ **t2q_cdmm_pecs**: Runtime budget to isl performance simulation
-    1) CDMM gives runtime budget and respective reached ISL.
-    2) Analyze ISL performance of PECS after given time budget.
-
-**05_Plotting**: Figure generation.
-
-**99_Utilities**: Storage for Submodules.
-
-## Relation between scripts and figures in the paper: 
+3) The folders `04_Experiments` and `05_Plotting` can be used to re-run the experiments in the paper. Simply run an experiment in the experiment folder first and then start the respective plot script in the plot folder to visualize the generated data. 
