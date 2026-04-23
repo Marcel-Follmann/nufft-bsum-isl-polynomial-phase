@@ -21,7 +21,7 @@ classdef Params
 				params.nr_samples       (1,1) double {mustBePositive}               % Sequence Length
 				params.nr_params        (1,1) double {mustBePositive}               % Number of Parameters
                 params.nr_candidates    (1,1) double {mustBePositive}       = 501   % Number of minima to pursue
-                params.max_mm_iters     (1,1) double {mustBePositive}       = 1e4   % Maximum number of MM steps
+                params.max_mm_iters     (1,1) double {mustBePositive}       = 1e5   % Maximum number of MM steps
                 params.nr_cd_iterations (1,1) double {mustBePositive}       = 1     % Number of complete CD iterations
                 params.oversampling     (1,1) double {mustBePositive}       = 2     % Oversampling for NUFFT
                 params.tol              (1,1) double {mustBeNonnegative}    = 1e-6  % Tolerance for local minima

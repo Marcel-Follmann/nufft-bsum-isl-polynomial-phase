@@ -3,8 +3,8 @@ close all; clearvars; clc;
 figure_handler = Figurehandler.Create("savePath","01_Figures\");
 fig = {};
 
-file = uigetfile('*.mat', "Select Data", "02_Data");
-load("02_Data\" + string(file));
+[file, location] = uigetfile('*.mat', "Select Data", string(pwd) + "\02_Data\t2q_cdmm_pecs");
+load(string(location) + string(file));
 
 reorder = @(data) reorder_data(data, [3, 2, 1], ...
     nr_monte_carlos, poly_order, samples); % Resembles for loop order in experiments file
