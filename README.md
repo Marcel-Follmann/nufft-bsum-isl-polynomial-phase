@@ -1,5 +1,5 @@
 # 🌟 Highlights
-- Implementation of [PECS](https://ieeexplore.ieee.org/document/9928573/), [FISL](https://www.sciencedirect.com/science/article/abs/pii/S1051200421000300), and CDMM. 
+- Implementation of [PECS](https://ieeexplore.ieee.org/document/9928573/), [FISL](https://www.sciencedirect.com/science/article/abs/pii/S1051200421000300), and BSUM. 
 - Runtime and performance comparison of BSUM with PECS and FISL. 
 - Sensitivity analysis of polynomial phase model
 
