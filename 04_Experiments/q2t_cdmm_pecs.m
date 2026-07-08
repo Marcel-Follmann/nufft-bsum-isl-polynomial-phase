@@ -6,11 +6,11 @@ function q2t_cdmm_pecs(nr_sample_vec, poly_order_vec)
     if isscalar(dbstack), close all; clc; end
     fprintf("\nQuality budget runtime anylysis: CDMM vs. PECS\n");
 
-    max_time = 100;
+    max_time = Inf;
     settings.nr_sample_vec = nr_sample_vec; 
     settings.poly_order_vec = poly_order_vec;
     
-    data_logger = Datalogger.ChunkBased(settings,"location", "02_Data\q2t_cdmm_pecs\");
+    data_logger = Datalogger.ChunkBased(settings,"location", "02_Data\q2t_cdmm_pecs_inf\");
         
     for idx_samples = 1:numel(nr_sample_vec)
         for idx_poly_order = 1:numel(poly_order_vec)
@@ -22,7 +22,7 @@ function q2t_cdmm_pecs(nr_sample_vec, poly_order_vec)
             params = Algorithm.Params(...
                 "nr_samples", nr_samples, ...
                 "nr_params", poly_order, ...
-                "max_mm_iters", nr_sample_vec(idx_samples)^3 ...
+                "max_mm_iters", nr_sample_vec(idx_samples)^2   ...
                 );
     
             isl_pecs = 0;

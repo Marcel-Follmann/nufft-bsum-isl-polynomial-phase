@@ -84,7 +84,9 @@ clim([-20, 0]);
 ylabel(c, "Magnitude (dB)");
 label_fisl = sprintf("FISL, ISL: %.2f dB", isl_fisl);
 title(label_fisl)
-
+ax = gca;
+ax.XMinorTick = 'off';
+ax.YGrid ="on";
 
 
 
@@ -94,9 +96,12 @@ plot(lags, 20*log10(abs(r_cdmm)), '-', "DisplayName", label_cdmm);
 xlabel('Lag (-)');
 ylabel('Magnitude (dB)');
 grid off; 
-lgd = legend("Location", "best", "Box","off");
+lgd = legend("Location", "northeast", "EdgeColor","white");
 clim([-20, 0])
 lgd.IconColumnWidth = 10;
+ax = gca;
+ax.XMinorTick = 'off';
+ax.YGrid ="on";
 
 fh1.PreparePdf(f{1});
 fh2.PreparePdf(f{2});

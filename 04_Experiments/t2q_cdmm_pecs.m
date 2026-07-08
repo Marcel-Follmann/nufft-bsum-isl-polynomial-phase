@@ -8,7 +8,7 @@ function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec)
 
     settings.nr_samples_vec = nr_sample_vec;
     settings.poly_order_vec = poly_order_vec;
-    data_logger = Datalogger.ChunkBased(settings, "location","02_Data\t2q_cdmm_pecs\");
+    data_logger = Datalogger.ChunkBased(settings, "location","02_Data\t2q_cdmm_pecs_zero\");
        
     
     for idx_samples = 1:numel(nr_sample_vec)

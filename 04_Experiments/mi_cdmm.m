@@ -1,24 +1,24 @@
-function mi_cdmm(nr_monte_carlo, nr_samples, vec_poly_order, nr_max_iters, tolerance)
+function mi_cdmm(nr_monte_carlo, nr_samples_vec, poly_order_vec, nr_max_iters, tolerance)
     arguments
         nr_monte_carlo (1,1) double {mustBeInteger} = 150, 
-        nr_samples (:,1) double {mustBeInteger} = [4;16;64], 
-        vec_poly_order (:,1) double {mustBeInteger} = 3:6,
+        nr_samples_vec (:,1) double {mustBeInteger} = [4;16;64], 
+        poly_order_vec (:,1) double {mustBeInteger} = 3:6,
         nr_max_iters (1,1) double {mustBeInteger} = 1e3,
         tolerance (1,1) double = 1e-3
     end
     if isscalar(dbstack), close all; clc; end
     fprintf("Mutual Interference Evaluation of CDMM\n");
 
-    fh = Figurehandler.Create("savePath","01_Figures\");
-    f = {};
-    colorlist = flip(["#00934B", "#D37611", "#005287"]);
-        
-    T = table();
-    for k = 1:numel(nr_samples)
-        for i = 1:numel(vec_poly_order)
+    settings.nr_sample_vec = nr_samples_vec; 
+    settings.poly_order_vec = poly_order_vec;
+    
+
+    for k = 1:numel(nr_samples_vec)
+        for i = 1:numel(poly_order_vec)
+            data_logger = Datalogger.ChunkBased(settings, "location", "02_Data\mi\");
             params = Algorithm.Params(...
-                "nr_samples", nr_samples(k), ...
-                "nr_params",vec_poly_order(i), ...
+                "nr_samples", nr_samples_vec(k), ...
+                "nr_params",poly_order_vec(i), ...
                 "max_mm_iters",nr_max_iters, ...
                 "tol", tolerance ...
                 );
@@ -31,48 +31,24 @@ function mi_cdmm(nr_monte_carlo, nr_samples, vec_poly_order, nr_max_iters, toler
                 x(:,mc) = params.generate_signal(a(:,mc));
             end
             
-            poly_order = vec_poly_order(i)-1;
-            samples = sprintf("N = %d",nr_samples(k));
+            poly_order = poly_order_vec(i)-1;
+            nr_samples = sprintf("N = %d",nr_samples_vec(k));
             for mc = 1:nr_monte_carlo
                 for j = mc+1:nr_monte_carlo
-                    y = xcorr(x(:,mc), x(:,j))/(nr_samples(k));
+                    y = xcorr(x(:,mc), x(:,j))/(nr_samples_vec(k));
                     % plot(20*log10(abs(y))); hold on; 
                     mi = max((abs(y)));
-                    T = [T; table(mi, poly_order, samples)];
+                    data_logger.append(mi, poly_order, nr_samples);
                 end
             end
+            data_logger.save();
             
             
             clear a x
-            fprintf("Order: %d, Length: %d, Done.\n", vec_poly_order(i), nr_samples(k));
+            fprintf("Order: %d, Length: %d, Done.\n", poly_order_vec(i), nr_samples_vec(k));
         end
     end
-    f{end+1} = figure("Name","Mutual Interference");
-    group = categorical(T.samples);
-    group = reordercats(group, {'N = 4','N = 16','N = 64'});
-    b = boxchart(T.poly_order, 20*log10(T.mi), 'GroupByColor',group, 'Notch','on');
-    ylabel("Normed Max. MI (dB)");
-    xlabel("Polynomial Order (-)");
-    lgd = legend("Location","best", "Box","off", "NumColumns",3);
-    lgd.IconColumnWidth = 10;
-    for i = 1:numel(b)
-        b(i).JitterOutliers = 'on';
-        b(i).MarkerStyle = '.';
-        b(i).BoxFaceColor = hex2rgb(colorlist(i));
-        b(i).MarkerColor = hex2rgb(colorlist(i));
-    end
-    ax = gca;
-     ylim([-25, 0])
-    ds = (vec_poly_order(2) - vec_poly_order(1))/2;
-    xticks(vec_poly_order-1)
-    xlim([vec_poly_order(1) - ds, vec_poly_order(end) + ds]-1);
     
-    for i = 1:numel(f)
-        fh.PreparePdf(f{i});
-    end
-    ax.XMinorTick = 'off';
-    ax.YGrid ="on";
-    fh.GenerateOutputs()
 
     if isscalar(dbstack), keyboard, end
 end
