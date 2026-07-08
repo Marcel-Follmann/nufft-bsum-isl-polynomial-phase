@@ -4,6 +4,7 @@ function plt_sen_cdmm(fh)
     end
     if isscalar(dbstack), close all; clc; end
 
+    f = {};
     load("02_Data\sen.mat");
     
     a = linspace(-pi/2,pi/2,1e3);

@@ -13,6 +13,15 @@ The project uses the term "CDMM" (Coordinate Descent Majorisation Minimization) 
 Hi, I'm Marcel Follmann, an early career researcher at the SPARC group in University Luxembourg. My research interests include cognitive radar, waveform optimization, control theory and signal processing as a whole.
 
 # 🚀 Usage
+To install the repo, just run:
+```bash 
+    git clone --recursive https://github.com/Marcel-Follmann/nufft-bsum-isl-polynomial-phase
+```
+This makes sure that you also recursively include the required submodules in the `99_Utilities` folder. 
+After that, just open the root folder in matlab and you're done.
+
+Some additional infos: 
+
 1) At the start the startup.m file should be run once such that all necessary folders for figure and data storage are created. 
 
 2) The repo is structured into different folders. Specifically the `+Algorithm` folder serves as a package to all algorithms compared in the paper. 
