@@ -5,8 +5,8 @@ function plt_perf_cdmm_pecs(fh)
     if isscalar(dbstack), close all; clc; end
     fig = {};
     
-    cdmm = load("02_Data\perf\perf_cdmm.mat");
-    pecs = load("02_Data\perf\perf_pecs.mat");
+    cdmm = load("02_Data\perf_2\perf_cdmm.mat");
+    pecs = load("02_Data\perf_2\perf_pecs.mat");
     
     % Reconstruct a over the Optimization
     [a, a_mm] = reorder_cdmm(cdmm);
@@ -69,9 +69,9 @@ function plt_perf_cdmm_pecs(fh)
     % ax.YGrid = 'on';
     % ax.YMinorGrid = 'off';
     
-    fh.PreparePdf(fig{1}, "markerSize", 5);%, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
+    fh.PrepareSvg(fig{1}, "markerSize", 5, "width", 31.56/2);%, "colorList",["#005287", "#005287", "#005287", "#005287", "#D37611", "#005287", "#00934B", "#CCCCCC"])
     for i = 2:numel(fig)
-        fh.PreparePdf(fig{i}, "markerSize", 5 );%, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
+        fh.PrepareSvg(fig{i}, "markerSize", 5, "width", 31.56/2);%, "colorList",flip(["#005287", "#D37611", "#00D16C", "#00934B", "#00753D", "#004725"]));
     end
     clear ans
     if isscalar(dbstack)

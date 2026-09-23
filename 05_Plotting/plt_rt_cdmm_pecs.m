@@ -45,7 +45,7 @@ function plt_rt_cdmm_pecs(fh)
     
     
     %% Formating
-    fh.PreparePdf(f{end}, "colorList",["#D37611", "#005287"]);
+    fh.PrepareSvg(f{end}, "colorList",["#D37611", "#005287"], "width", 31.56/2);
     
     if isscalar(dbstack)
         fh.GenerateOutputs();

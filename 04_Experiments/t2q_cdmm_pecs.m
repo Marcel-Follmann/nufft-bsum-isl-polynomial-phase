@@ -8,7 +8,7 @@ function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec)
 
     settings.nr_samples_vec = nr_sample_vec;
     settings.poly_order_vec = poly_order_vec;
-    data_logger = Datalogger.ChunkBased(settings, "location","02_Data\t2q_cdmm_pecs_zero\");
+    data_logger = Datalogger.ChunkBased(settings, "location","02_Data\t2q_cdmm_pecs_2\");
        
     
     for idx_samples = 1:numel(nr_sample_vec)
@@ -30,7 +30,8 @@ function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec)
             tic; 
             a = cdmm.run(a0);
             time_cdmm = toc;
-            isl_cdmm = params.compute_isl_dB(a);
+            x = params.generate_signal(a);
+            [psl_cdmm, isl_cdmm] = params.compute_psl_isl_dB(x);
             
             pecs = Algorithm.PECS(params);
             
@@ -48,7 +49,10 @@ function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec)
                     break;
                 end
             end
-            data_logger.append(nr_samples, poly_order, time_cdmm, isl_cdmm, time_pecs, isl_pecs);
+            x = params.generate_signal(a);
+            [psl_pecs, isl_pecs] = params.compute_psl_isl_dB(x);
+
+            data_logger.append(nr_samples, poly_order, time_cdmm, psl_cdmm, isl_cdmm, time_pecs, psl_pecs, isl_pecs);
             fprintf(".");
         end
     end

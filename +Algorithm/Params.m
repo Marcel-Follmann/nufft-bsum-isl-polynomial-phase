@@ -60,16 +60,49 @@ classdef Params
             x = exp(1i*phase);
         end
 
-        function isl_dB = compute_isl_dB(obj,x)   
+        function [isl_dB] = compute_isl_dB(obj,x)   
             F = fft(x, 2*obj.nr_samples, 1); % 2N for Aperiodic ACF
             rCirc = ifft(abs(F).^2, [],1);
             rPos = rCirc(2:obj.nr_samples,:,:); % lags 1, .., nSamples-1
             rAbs = abs(rPos)/obj.nr_samples;
             
+            % r0    = abs(rCirc(1,:,:));
+            % psl_lin = max(abs(rPos), [], 1) ./ r0;
+            % psl_dB  = 20*log10(psl_lin);
+            % psl_dB  = permute(psl_dB, [2,3,1]);
+
             isl_lin = 2*sum(rAbs.^2,1)/obj.nr_samples;
             isl_dB = 10*log10(isl_lin);
             
             isl_dB = permute(isl_dB, [2,3,1]);
+        end
+
+        function [psl_dB, isl_dB] = compute_psl_isl_dB(obj,x)   
+            F = fft(x, 2*obj.nr_samples, 1); % 2N for Aperiodic ACF
+            rCirc = ifft(abs(F).^2, [],1);
+            rPos = rCirc(2:obj.nr_samples,:,:); % lags 1, .., nSamples-1
+            rAbs = abs(rPos)/obj.nr_samples;
+            
+            r0    = abs(rCirc(1,:,:));
+            psl_lin = max(abs(rPos), [], 1) ./ r0;
+            psl_dB  = 20*log10(psl_lin);
+            psl_dB  = permute(psl_dB, [2,3,1]);
+
+            isl_lin = 2*sum(rAbs.^2,1)/obj.nr_samples;
+            isl_dB = 10*log10(isl_lin);
+            
+            isl_dB = permute(isl_dB, [2,3,1]);
+        end
+
+        function psl_dB = compute_psl_dB(obj, x)
+            F     = fft(x, 2*obj.nr_samples, 1);      
+            rCirc = ifft(abs(F).^2, [], 1);
+            rPos  = rCirc(2:obj.nr_samples,:,:);       
+
+            r0    = abs(rCirc(1,:,:));
+            psl_lin = max(abs(rPos), [], 1) ./ r0;
+            psl_dB  = 20*log10(psl_lin);
+            psl_dB  = permute(psl_dB, [2,3,1]);
         end
 
         function r = compute_autocorr(obj, x, options)

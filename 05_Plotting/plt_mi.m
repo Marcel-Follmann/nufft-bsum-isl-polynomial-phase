@@ -29,7 +29,7 @@ xticks(poly_order_vec-1)
 xlim([poly_order_vec(1) - ds, poly_order_vec(end) + ds]-1);
 
 for i = 1:numel(f)
-    fh.PreparePdf(f{i});
+    fh.PrepareSvg(f{i});
 end
 ax.XMinorTick = 'off';
 ax.YGrid ="on";

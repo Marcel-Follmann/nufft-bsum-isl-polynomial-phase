@@ -8,6 +8,7 @@ classdef General < handle
         smoothness
         tol
         d_range
+        periods
    	end
 
 	methods
@@ -21,6 +22,7 @@ classdef General < handle
 
             obj.smoothness  = obj.calculate_smoothness();
             obj.d_range = obj.calculate_d_range();
+            obj.periods = 2*pi./obj.calculate_gcd();
         end
 
         function a = run(obj, a, options)
@@ -28,14 +30,18 @@ classdef General < handle
 				obj 
 				a (:,1) double 
                 options.data_logger Datalogger.Type = Datalogger.Empty
-                options.a_range = NaN
             end
+            change_dB_min = 0.5;
+            delta_min = 10^(change_dB_min/20);
+            f_tau = obj.params.tol + sqrt(obj.params.tol + 2*delta_min); 
+
             logger = options.data_logger;
             logger.log("params", obj.params);
 
             phase = a(3:end).'*obj.d;
             g_p = obj.g.*exp(1i*phase); 
 			
+            ISL_old = Inf;
             for i_cd = 1:obj.params.nr_cd_iterations
 			    for p = 3:obj.params.nr_params
                     % Bring into DFT format
@@ -43,38 +49,27 @@ classdef General < handle
                     phase = a(p).'*d_p;
                     g_p = g_p.*exp(-1i*phase);
 
-                    % NUFFT for ISL and dISL/da
+                    % Configure Search Space
+                    tmp = numel(g_p) * abs(log10(1/obj.params.tol));
+                    L = tmp / log10(tmp);
+
                     dA = pi/max(d_p);
-                    if ~isnan(options.a_range)
-                        if obj.params.nr_candidates > 1
-                            a_grid = linspace(options.a_range(1),options.a_range(2), obj.params.nr_candidates);
-                        else
-                            a_grid = a(3);
-                        end
+                    if dA*L > obj.periods(p-2), L = obj.periods(p-2)/dA; end % Rescale L to one period
+                    L = 2*ceil(L/2) - 1;  % Make odd; 
 
-                        a_range = options.a_range;
+                    a_range = a(p) + dA*[-(L-1)/2;(L-1)/2];
+
+                    % Configure Basins
+                    if obj.params.nr_candidates == 1
+                        a_grid = a(p); 
                     else
-                        tmp = numel(g_p) * log10(1/obj.params.tol);
-                        N = ceil(tmp / log(tmp));
-                        %clear tmp;
-
-                        f = unique(factor(p-1));
-                        if isscalar(f)
-                            period = 2*pi/f;
-                        else
-                            period = 2*pi;
-                        end
-                        
-                        if N*dA > period
-                            N = ceil(pi/dA);
-                        end
-
-                        a_range = a(p) + dA*[-N/2;N/2];
                         a_grid = linspace(a_range(1),a_range(2), obj.params.nr_candidates);
+                        a_grid((obj.params.nr_candidates +1)/2) = a(p);
                     end
 
-                    f = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol/40);
-                    df = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol/40);
+                    % NUFFT for ISL and dISL/da
+                    f = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol);
+                    df = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol);
                     f.apply(d_p, g_p);
                     df.apply(d_p, 1i*d_p.*g_p);
                     
@@ -100,7 +95,7 @@ classdef General < handle
                             break; % Out of reach for save NUFFT interpolation
                         end
 
-                        if all([abs(a_step) < obj.params.tol, i > 1])
+                        if abs(tangent)  / sqrt(obj.smoothness(p-2)) < f_tau
                             break; % No more progress
                         end
 
@@ -112,7 +107,7 @@ classdef General < handle
                             "i_cd", i_cd ...
                             );
                     end
-    
+
                     % Select final minima
                     isl     = real(f.interpolate(a_mm));
 				    [~, k]  = min(isl);
@@ -121,8 +116,13 @@ classdef General < handle
                     phase = a(p).'*d_p;
                     g_p = g_p.*exp(1i*phase);
                 end
-            end
 
+                ISL_new = real(f.interpolate(a(p)));
+                change_db = abs(20*log10(ISL_old) - 20*log10(ISL_new));
+                if change_db < change_dB_min, break; end
+                ISL_old = ISL_new; 
+                
+            end
             logger.log("a", a);
             %delete(logger);
         end
@@ -162,6 +162,13 @@ classdef General < handle
 
         function d_ranges = calculate_d_range(obj)
             d_ranges = [min(obj.d, [], 2), max(obj.d, [], 2)];
+        end
+
+        function g = calculate_gcd(obj)
+            g = obj.d(:,2); 
+            for i = 4:2:size(obj.d,2)
+                g = gcd(g, obj.d(:,i));
+            end
         end
     end
 end

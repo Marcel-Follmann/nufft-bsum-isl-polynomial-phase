@@ -25,11 +25,11 @@ function perf_cdmm_pecs(nr_samples, poly_order, nr_max_iters, tolerance)
     
     fprintf("Run PECS\n")
     pecs.run(x0, a0, ...
-        "data_logger", Datalogger.Create("file_location", "02_Data\perf","file_name","perf_pecs"));
+        "data_logger", Datalogger.Create("file_location", "02_Data\perf_2","file_name","perf_pecs"));
     
     fprintf("Run CDMM\n")
     cdmm.run(a0, ...
-        "data_logger", Datalogger.Create("file_location", "02_Data\perf","file_name","perf_cdmm"));
+        "data_logger", Datalogger.Create("file_location", "02_Data\perf_2","file_name","perf_cdmm"));
 
     if isscalar(dbstack), keyboard, end
 end

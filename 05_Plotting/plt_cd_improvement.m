@@ -30,7 +30,7 @@ function plt_cd_improvement(fh)
     box on;
     lgd = legend("Location","best", "EdgeColor","white", "NumColumns", 1);
     lgd.set("IconColumnWidth", 15);
-    fh.PreparePdf(f{end});
+    fh.PrepareSvg(f{end});
     ax.XMinorTick = 'off';
     ax.YGrid ="on";
 

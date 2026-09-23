@@ -45,7 +45,7 @@ r_cdmm = params.compute_autocorr(x_cdmm);
 
 
 lags = (-(params.nr_samples-1):(params.nr_samples-1));
-nuVec = linspace(-.5, .5, 1e4+1);
+nuVec = linspace(-.5, .5, 1e2+1);
 
 AF_cdmm = 20*log10(params.compute_ambiguity_function(x_cdmm, lags,nuVec));
 AF_fisl = 20*log10(params.compute_ambiguity_function(x_fisl, lags,nuVec));
@@ -53,9 +53,9 @@ AF_fisl = 20*log10(params.compute_ambiguity_function(x_fisl, lags,nuVec));
 % AF_fisl(AF_fisl <= -50) = NaN;
 
 
-f{end+1} = figure("Name","AF");
-t = tiledlayout(1,2);
-nexttile;
+% f{end+1} = figure("Name","AF");
+% t = tiledlayout(1,2);
+f{end+1} = figure("Name","AF BSUM");%nexttile;
 imagesc(nuVec, lags, AF_cdmm);
 clim([-20, 0]);
 shading interp;
@@ -66,24 +66,34 @@ ylabel("Lag (-)")
 xlabel("Normalized Doppler (-)");
 zlabel("Magnitude (dB)");
 label_cdmm = sprintf("BSUM, ISL: %.2f dB", isl_cdmm);
-title(label_cdmm)
+% title(label_cdmm)
+map = CreateColormap((["#005287", "#FFFFFF", "#D37611"]));
+% colormap(map)
+% c = colorbar;
+clim([-20, 0]);
+% ylabel(c, "Magnitude (dB)");
+label_fisl = sprintf("FISL, ISL: %.2f dB", isl_fisl);
+% title(label_fisl)
+ax = gca;
+ax.XMinorTick = 'off';
+ax.YGrid ="on";
 
 % f{end+1} = figure("Name","AF FISL");
-nexttile;
+f{end+1} = figure("Name","AF FISL");% nexttile;
 imagesc(nuVec, lags, AF_fisl);
 grid off;
-shading interp;
+% shading interp;
 ylabel("Lag (-)")
 xlabel("Normalized Doppler (-)");
 zlabel("Magnitude (dB)");
 map = CreateColormap((["#005287", "#FFFFFF", "#D37611"]));
-colormap(map)
-c = colorbar;
-c.Layout.Tile = "north";
+% colormap(map)
+% c = colorbar;
+% c.Layout.Tile = "north";
 clim([-20, 0]);
-ylabel(c, "Magnitude (dB)");
+% ylabel(c, "Magnitude (dB)");
 label_fisl = sprintf("FISL, ISL: %.2f dB", isl_fisl);
-title(label_fisl)
+% title(label_fisl)
 ax = gca;
 ax.XMinorTick = 'off';
 ax.YGrid ="on";
@@ -103,10 +113,10 @@ ax = gca;
 ax.XMinorTick = 'off';
 ax.YGrid ="on";
 
-fh1.PreparePdf(f{1});
-fh2.PreparePdf(f{2});
+fh1.PrepareSvg(f{1}, "width", 31.56/2);
+fh1.PrepareSvg(f{2}, "width", 31.56/2);
 fh1.GenerateOutputs();
-fh2.GenerateOutputs();
+% fh2.GenerateOutputs();
 
 function map = CreateColormap(colorlist)
     N = 256;

@@ -31,7 +31,7 @@ function plt_sen_cdmm(fh)
     ylim([ticks(1), ticks(end)]);
     
     for i = 1:numel(f)
-        fh.PreparePdf(f{i});
+        fh.PrepareSvg(f{i});
     end
 
 

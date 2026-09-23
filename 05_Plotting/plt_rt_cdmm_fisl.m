@@ -68,7 +68,7 @@ for i = 1:numel(b)
     b(i).MarkerColor = hex2rgb(colorlist(i));
 end
 
-fh.PreparePdf(f{1}, "colorList",["#005287", "#D37611", repelem("#CCCCCC", numel(mean_convergence))]);
-fh.PreparePdf(f{2});
+fh.PrepareSvg(f{1}, "colorList",["#005287", "#D37611", repelem("#CCCCCC", numel(mean_convergence))], "width", 31.56/2);
+fh.PrepareSvg(f{2}, "width", 31.56/2);
 ax.YScale ="log";
 fh.GenerateOutputs();
