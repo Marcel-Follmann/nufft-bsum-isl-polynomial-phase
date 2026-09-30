@@ -1,8 +1,8 @@
 function grid_size_cdmm(nr_sample_vec, poly_order_vec, grid_size_vec)
     arguments
-        nr_sample_vec (:,1) double {mustBeInteger} = 32:32:256, 
-        poly_order_vec (:,1) double {mustBeInteger} = 3:5
-        grid_size_vec (:,1) double = [51, 501, 5001];
+        nr_sample_vec (:,1) double {mustBeInteger} = 32, 
+        poly_order_vec (:,1) double {mustBeInteger} = 3:4
+        grid_size_vec (:,1) double = 2 * ceil(round(logspace(0,5,6)) / 2) - 1;
     end
     if isscalar(dbstack), close all; clc; end
     

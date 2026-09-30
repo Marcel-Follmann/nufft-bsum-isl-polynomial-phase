@@ -6,49 +6,69 @@ fh1 = Figurehandler.Create("savePath","01_Figures\");
 fh2 = Figurehandler.Create("savePath","01_Figures\");
 f = {};
 
-data = Datalogger.ChunkBased.logsAsFlatTable("02_Data\rt_cdmm_fisl\");
-mu = groupsummary(data, "nr_samples", "mean", ["time_cdmm_ood", "time_cdmm", "time_fisl"]);
-nr_samples_vec = sort(unique(mu.nr_samples), "ascend");
-
-params = Algorithm.Params(...
+params_2 = Algorithm.Params(...
     "nr_samples", 64, ...
-    "nr_params",3, ...
-    "max_mm_iters",1e3, ...
-    "tol", 1e-9, ...
-    "nr_candidates",1000 ...
+    "nr_params",3 ...
     );
 
-cdmm = Algorithm.CDMM.OOD(params);
-fisl = Algorithm.FISL(params);
+cdmm_2 = Algorithm.CDMM.OOD(params_2);
+fisl = Algorithm.FISL(params_2);
 
-[x0, a0] = params.get_random_sequence();
-a0 = mod(a0, pi); % as this is periodic
+[x0, a2] = params_2.get_random_sequence();
 
-tic; 
 x_fisl = fisl.run(x0);
-time_fisl = toc;
-fprintf("Time FISL: %.2e s\n", time_fisl);
-isl_fisl = params.compute_isl_dB(x_fisl);
+isl_fisl = params_2.compute_isl_dB(x_fisl);
 
-tic; 
-a = cdmm.run(a0, "a_range",a0(3)+[-.5, .5]);
-time_cdmm = toc; 
-fprintf("Time CDMM: %.2e s\n", time_cdmm);
-
-x_cdmm = params.generate_signal(a);
-isl_cdmm = params.compute_isl_dB(x_cdmm);
+a = cdmm_2.run(a2, "a_range",a2(3)+[-.5, .5]);
+x_cdmm = params_2.generate_signal(a);
+isl_cdmm = params_2.compute_isl_dB(x_cdmm);
 
 fprintf("ISL FISL: %.2f dB\nISL CDMM: %.2f dB\n", isl_fisl, isl_cdmm);
 
-r_fisl = params.compute_autocorr(x_fisl);
-r_cdmm = params.compute_autocorr(x_cdmm);
+r_fisl = params_2.compute_autocorr(x_fisl);
+r_cdmm = params_2.compute_autocorr(x_cdmm);
 
+N = params_2.nr_samples;
+lags = (-(N-1):(N-1));
+dNu = 1/N;
+nuVec = -.5:dNu:.5-dNu;
 
-lags = (-(params.nr_samples-1):(params.nr_samples-1));
-nuVec = linspace(-.5, .5, 1e2+1);
+AF_cdmm = pow2db(params_2.compute_ambiguity_function(x_cdmm, lags,nuVec));
+AF_fisl = pow2db(params_2.compute_ambiguity_function(x_fisl, lags,nuVec));
 
-AF_cdmm = 20*log10(params.compute_ambiguity_function(x_cdmm, lags,nuVec));
-AF_fisl = 20*log10(params.compute_ambiguity_function(x_fisl, lags,nuVec));
+params_3 = Algorithm.Params(...
+    "nr_samples", 64, ...
+    "nr_params",4 ...
+    );
+params_4 = Algorithm.Params(...
+    "nr_samples", 64, ...
+    "nr_params",5 ...
+    );
+
+cdmm_3 = Algorithm.CDMM.General(params_3);
+cdmm_4 = Algorithm.CDMM.General(params_4);
+
+MC = 10;
+for mc = 1:MC
+    [x0, a2] = params_2.get_random_sequence();
+    [~, a3] = params_3.get_random_sequence();
+    [~, a4] = params_4.get_random_sequence();
+    x_fisl = fisl.run(x0);
+    a_2 = cdmm_2.run(a2);
+    a_3 = cdmm_3.run(a3);
+    a_4 = cdmm_4.run(a4);
+    x_cdmm_2 = params_2.generate_signal(a_2);
+    x_cdmm_3 = params_3.generate_signal(a_3);
+    x_cdmm_4 = params_4.generate_signal(a_4);
+
+    Q_cdmm_2(mc) = pow2db(params_2.compute_doppler_tolerance(x_cdmm_2));
+    Q_cdmm_3(mc) = pow2db(params_3.compute_doppler_tolerance(x_cdmm_3));
+    Q_cdmm_4(mc) = pow2db(params_4.compute_doppler_tolerance(x_cdmm_4));
+    Q_fisl(mc) = pow2db(params_4.compute_doppler_tolerance(x_fisl));
+    fprintf(".");
+end
+fprintf("\nMean Q=2: %.2f dB\nMean Q=3: %.2f dB\nMean Q=4: %.2f dB\nMean FISL: %.2f dB\n", ...
+    mean(Q_cdmm_2), mean(Q_cdmm_3), mean(Q_cdmm_4), mean(Q_fisl));
 % AF_cdmm(AF_cdmm <= -50) = NaN;
 % AF_fisl(AF_fisl <= -50) = NaN;
 
@@ -77,6 +97,7 @@ label_fisl = sprintf("FISL, ISL: %.2f dB", isl_fisl);
 ax = gca;
 ax.XMinorTick = 'off';
 ax.YGrid ="on";
+% hold on; plot(1/params.nr_samples * [1, 1], [-64, 64]);
 
 % f{end+1} = figure("Name","AF FISL");
 f{end+1} = figure("Name","AF FISL");% nexttile;

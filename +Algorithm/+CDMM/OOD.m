@@ -8,6 +8,7 @@ classdef OOD < handle
         smoothness
         tol
         d_range
+        periods
 
         f, df
    	end
@@ -23,12 +24,14 @@ classdef OOD < handle
 
             obj.smoothness  = obj.calculate_smoothness();
             obj.d_range = obj.calculate_d_range();
+            obj.periods = 2*pi./obj.calculate_gcd();
+            obj.tol = obj.params.tol * sqrt(obj.smoothness); % To make it comparable to the PECS algorithm stop criterion
 
             % NUFFT for ISL and dISL/da
             a_range = [0, pi];
 
-            obj.f = oNufft.Type3(obj.d_range, a_range, "epsilon",obj.params.tol/40);
-            obj.df = oNufft.Type3(obj.d_range, a_range, "epsilon",obj.params.tol/40);
+            obj.f = oNufft.Type3(obj.d_range, a_range, "epsilon",obj.params.nufft_e);
+            obj.df = oNufft.Type3(obj.d_range, a_range, "epsilon",obj.params.nufft_e);
             obj.f.apply(obj.d, obj.g);
             obj.df.apply(obj.d, 1i*obj.d.*obj.g);
         end
@@ -52,8 +55,22 @@ classdef OOD < handle
                 
                 a_range = options.a_range;
             else
-                a_grid = 0:dA:pi;
-                a_range = [a_grid(1), a_grid(end)];
+                tmp = numel(obj.g) * abs(log10(1/obj.params.nufft_e));
+                L = tmp / log10(tmp);
+
+                dA = pi/max(obj.d);
+                if dA*L > obj.periods, L = obj.periods/dA; end % Rescale L to one period
+                L = 2*ceil(L/2) - 1;  % Make odd; 
+
+                a_range = a(end) + dA*[-(L-1)/2;(L-1)/2];
+
+                 % Configure Basins
+                if obj.params.nr_candidates == 1
+                    a_grid = a(end); 
+                else
+                    a_grid = linspace(a_range(1),a_range(2), obj.params.nr_candidates);
+                    a_grid((obj.params.nr_candidates +1)/2) = a(end);
+                end
             end
             
             % Select multiple MM candidates
@@ -78,10 +95,8 @@ classdef OOD < handle
                     break; % Out of reach for save NUFFT interpolation
                 end
 
-                if all([abs(a_step) < obj.params.tol, i > 1])
-                    % fprintf("%d\n", i);
-                    break; % No more progress
-                end
+                gradient = abs(tangent)  / sqrt(obj.smoothness) ;
+                if gradient < obj.tol, break; end
 
                 a_mm = a_mm + a_step;
                 logger.log( ...
@@ -136,6 +151,13 @@ classdef OOD < handle
 
         function d_ranges = calculate_d_range(obj)
             d_ranges = [min(obj.d, [], 2), max(obj.d, [], 2)];
+        end
+
+        function g = calculate_gcd(obj)
+            g = obj.d(:,2); 
+            for i = 4:2:size(obj.d,2)
+                g = gcd(g, obj.d(:,i));
+            end
         end
     end
 end

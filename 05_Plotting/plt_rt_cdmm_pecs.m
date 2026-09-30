@@ -6,7 +6,7 @@ function plt_rt_cdmm_pecs(fh)
     f = {};
     nr_files = 500;
     
-    data = Datalogger.ChunkBased.logsAsFlatTable("02_Data\rt_cdmm_pecs\", nr_files);
+    data = Datalogger.ChunkBased.logsAsFlatTable("02_Data\rt_cdmm_pecs\");
     mu = groupsummary(data, ["nr_samples", "poly_order"], "mean", ["timeCDMM", "timePECS"]);
     
     poly_order_vec = sort(unique(mu.poly_order), "descend") - 1;
@@ -45,7 +45,7 @@ function plt_rt_cdmm_pecs(fh)
     
     
     %% Formating
-    fh.PrepareSvg(f{end}, "colorList",["#D37611", "#005287"], "width", 31.56/2);
+    fh.PreparePdf(f{end}, "colorList",["#D37611", "#005287"]);
     
     if isscalar(dbstack)
         fh.GenerateOutputs();

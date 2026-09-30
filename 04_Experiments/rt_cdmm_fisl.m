@@ -1,12 +1,13 @@
-function rt_cdmm_fisl(nr_sample_vec)
+function rt_cdmm_fisl(nr_sample_vec, nr_monte_carlo)
     arguments
         nr_sample_vec (:,1) double {mustBeInteger} = 32:32:256, 
+        nr_monte_carlo (1,1) double {mustBeInteger} = 1
     end
     if isscalar(dbstack), close all; clc; end
     fprintf("\nRuntime anylysis: CDMM vs. FISL\n");
 
     settings.nr_sample_vec = nr_sample_vec;
-    data_logger = Datalogger.ChunkBased(settings, "location","02_Data\rt_cdmm_fisl\");
+    data_logger = Datalogger.ChunkBased(settings, "location","02_Data\rt_cdmm_fisl_2\");
     %% Simulation
     for i = 1:numel(nr_sample_vec)
         nr_samples = nr_sample_vec(i);
@@ -15,31 +16,35 @@ function rt_cdmm_fisl(nr_sample_vec)
         "nr_params", 3 ...
         );
     
-        % Initialization
-        cdmm = Algorithm.CDMM.General(params);
-        cdmm_ood = Algorithm.CDMM.OOD(params);
-        fisl = Algorithm.FISL(params);
+        for tmp = 1:nr_monte_carlo
+            % Initialization
+            cdmm = Algorithm.CDMM.General(params);
+            tic; 
+            cdmm_ood = Algorithm.CDMM.OOD(params);
+            time_cdmm_ood_prep = toc; 
+            fisl = Algorithm.FISL(params);
+            
+            % fprintf("P: %d ...", nr_sample_vec(i));
+            
+            [x0, a0] = params.get_random_sequence();
         
-        % fprintf("P: %d ...", nr_sample_vec(i));
+         
+            tic; 
+            cdmm_ood.run(a0); 
+            time_cdmm_ood = toc; 
+    
+            tic; 
+            cdmm.run(a0); 
+            time_cdmm = toc; 
+    
+            tic; 
+            fisl.run(x0); 
+            time_fisl = toc; 
+    
+            data_logger.append(nr_samples, time_cdmm_ood, time_cdmm_ood_prep, time_cdmm, time_fisl);
         
-        [x0, a0] = params.get_random_sequence();
-    
-     
-        tic; 
-        cdmm_ood.run(a0, "a_range",a0(3)+[-.5, .5]); 
-        time_cdmm_ood = toc; 
-
-        tic; 
-        cdmm.run(a0, "a_range",a0(3)+[-.5, .5]); 
-        time_cdmm = toc; 
-
-        tic; 
-        fisl.run(x0); 
-        time_fisl = toc; 
-
-        data_logger.append(nr_samples, time_cdmm_ood, time_cdmm, time_fisl);
-    
-        fprintf(".");
+            fprintf(".");
+        end
     end
     data_logger.save();
     close all; 

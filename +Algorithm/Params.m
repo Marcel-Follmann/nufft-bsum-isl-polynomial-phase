@@ -10,6 +10,7 @@ classdef Params
         nr_candidates
         nr_cd_iterations
         oversampling
+        nufft_e
 
         % PECS specific
         p_norm
@@ -21,11 +22,12 @@ classdef Params
 				params.nr_samples       (1,1) double {mustBePositive}               % Sequence Length
 				params.nr_params        (1,1) double {mustBePositive}               % Number of Parameters
                 params.nr_candidates    (1,1) double {mustBePositive}       = 501   % Number of minima to pursue
-                params.max_mm_iters     (1,1) double {mustBePositive}       = 1e5   % Maximum number of MM steps
-                params.nr_cd_iterations (1,1) double {mustBePositive}       = 1     % Number of complete CD iterations
+                params.max_mm_iters     (1,1) double {mustBePositive}       = 1e4   % Maximum number of MM steps
+                params.nr_cd_iterations (1,1) double {mustBePositive}       = 1e2   % Number of complete CD iterations
                 params.oversampling     (1,1) double {mustBePositive}       = 2     % Oversampling for NUFFT
-                params.tol              (1,1) double {mustBeNonnegative}    = 1e-6  % Tolerance for local minima
+                params.tol              (1,1) double {mustBeNonnegative}    = 5e-4  % Tolerance for local minima
                 params.p_norm           (1,1) double {mustBeNonnegative}    = 2     % p-th Norm calculation
+                params.nufft_e          (1,1) double {mustBeNonnegative}    = 1e-4  % Tolerance of the NUFFT
             end
             obj.nr_samples          = params.nr_samples;
 			obj.nr_params           = params.nr_params;
@@ -35,6 +37,7 @@ classdef Params
             obj.oversampling        = params.oversampling;
             obj.tol                 = params.tol;
             obj.p_norm              = params.p_norm;
+            obj.nufft_e             = params.nufft_e;
         end
 
         function [x0, a0] = get_random_sequence(obj)
@@ -79,9 +82,9 @@ classdef Params
 
         function [psl_dB, isl_dB] = compute_psl_isl_dB(obj,x)   
             F = fft(x, 2*obj.nr_samples, 1); % 2N for Aperiodic ACF
-            rCirc = ifft(abs(F).^2, [],1);
+            rCirc = ifft(abs(F).^2, [],1)/obj.nr_samples;
             rPos = rCirc(2:obj.nr_samples,:,:); % lags 1, .., nSamples-1
-            rAbs = abs(rPos)/obj.nr_samples;
+            rAbs = abs(rPos);
             
             r0    = abs(rCirc(1,:,:));
             psl_lin = max(abs(rPos), [], 1) ./ r0;
@@ -142,10 +145,20 @@ classdef Params
                 
                 for inu = 1:length(nuVec)
                     nu = nuVec(inu);
-                    AF(itau,inu) = sum(x1 .* conj(x2) .* exp(1j*2*pi*nu*n_use));
+                    AF(itau,inu) = sum(x1 .* conj(x2) .* exp(1j*2*pi*nu*n_use)).^2;
                 end
             end
             AFn = abs(AF) / max(abs(AF(:)));
+        end
+
+        function quirk_metric = compute_doppler_tolerance(obj, x)
+            % Based on Quirk et al. 2023, Eq. (2) - (6)
+            N = obj.nr_samples;
+            lags = (-(N-1):(N-1));
+            dNu = 1/N;
+            nuVec = [0, dNu];
+            AF = obj.compute_ambiguity_function(x, lags,nuVec);
+            quirk_metric = max(AF(:,2));
         end
     end
 end

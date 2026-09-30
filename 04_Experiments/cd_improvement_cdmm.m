@@ -11,24 +11,26 @@ function cd_improvement_cdmm(nr_samples_vec, poly_order)
     % fh = Figurehandler.Create("savePath","01_Figures\");
     % f = {};
     % colorlist = flip(["#00934B", "#D37611", "#005287"]);
+    loc = "ci";
     settings.nr_sample_vec = nr_samples_vec; 
     settings.poly_order = poly_order;
-    data_logger_external = Datalogger.ChunkBased(settings, "location", "02_Data\ci\");
+    data_logger_external = Datalogger.ChunkBased(settings, "location", "02_Data\" + loc + "\");
 
     for k = 1:numel(nr_samples_vec)
         params = Algorithm.Params(...
         "nr_samples", nr_samples_vec(k), ...
-        "nr_params",poly_order ...
+        "nr_params",poly_order, ...
+        "nr_cd_iterations", 1 ...
         );
         
         cdmm = Algorithm.CDMM.General(params);
-        data_logger_internal = Datalogger.Create("file_location", "02_Data\ci", "file_name","ci");
+        data_logger_internal = Datalogger.Create("file_location", "02_Data\" + loc, "file_name","ci");
         [~, a0] = params.get_random_sequence();
         cdmm.run(a0, "data_logger", data_logger_internal);
         data_logger_internal.delete();
-        while ~exist("02_Data\ci\ci.mat", "file"), pause(0.001); end
-        load("02_Data\ci\ci.mat");
-        delete("02_Data\ci\ci.mat");
+        while ~exist("02_Data\" + loc + "\ci.mat", "file"), pause(0.001); end
+        load("02_Data\" + loc + "\ci.mat");
+        delete("02_Data\" + loc + "\ci.mat");
 
         for i = 1:size(a,2)
             x = params.generate_signal(a(:,i));

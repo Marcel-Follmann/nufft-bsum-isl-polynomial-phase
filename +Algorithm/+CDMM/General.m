@@ -23,6 +23,7 @@ classdef General < handle
             obj.smoothness  = obj.calculate_smoothness();
             obj.d_range = obj.calculate_d_range();
             obj.periods = 2*pi./obj.calculate_gcd();
+            obj.tol = obj.params.tol * sqrt(min(obj.smoothness)) / sqrt(obj.params.nr_params - 2); % To make it comparable to the PECS algorithm stop criterion
         end
 
         function a = run(obj, a, options)
@@ -31,17 +32,15 @@ classdef General < handle
 				a (:,1) double 
                 options.data_logger Datalogger.Type = Datalogger.Empty
             end
-            change_dB_min = 0.5;
-            delta_min = 10^(change_dB_min/20);
-            f_tau = obj.params.tol + sqrt(obj.params.tol + 2*delta_min); 
-
             logger = options.data_logger;
             logger.log("params", obj.params);
 
             phase = a(3:end).'*obj.d;
             g_p = obj.g.*exp(1i*phase); 
 			
-            ISL_old = Inf;
+            gradient = Inf * ones(1, obj.params.nr_params);
+            gradient(1:2) = 0;
+
             for i_cd = 1:obj.params.nr_cd_iterations
 			    for p = 3:obj.params.nr_params
                     % Bring into DFT format
@@ -50,7 +49,7 @@ classdef General < handle
                     g_p = g_p.*exp(-1i*phase);
 
                     % Configure Search Space
-                    tmp = numel(g_p) * abs(log10(1/obj.params.tol));
+                    tmp = numel(g_p) * abs(log10(1/obj.params.nufft_e));
                     L = tmp / log10(tmp);
 
                     dA = pi/max(d_p);
@@ -68,8 +67,8 @@ classdef General < handle
                     end
 
                     % NUFFT for ISL and dISL/da
-                    f = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol);
-                    df = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.tol);
+                    f = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.nufft_e);
+                    df = oNufft.Type3(obj.d_range(p-2,:), a_range, "epsilon",obj.params.nufft_e);
                     f.apply(d_p, g_p);
                     df.apply(d_p, 1i*d_p.*g_p);
                     
@@ -95,7 +94,8 @@ classdef General < handle
                             break; % Out of reach for save NUFFT interpolation
                         end
 
-                        if abs(tangent)  / sqrt(obj.smoothness(p-2)) < f_tau
+                        gradient(p) = abs(tangent)  / sqrt(obj.smoothness(p-2)) ;
+                        if gradient(p) < 5*obj.params.nufft_e
                             break; % No more progress
                         end
 
@@ -117,10 +117,7 @@ classdef General < handle
                     g_p = g_p.*exp(1i*phase);
                 end
 
-                ISL_new = real(f.interpolate(a(p)));
-                change_db = abs(20*log10(ISL_old) - 20*log10(ISL_new));
-                if change_db < change_dB_min, break; end
-                ISL_old = ISL_new; 
+                if all(gradient) < obj.tol, break; end
                 
             end
             logger.log("a", a);

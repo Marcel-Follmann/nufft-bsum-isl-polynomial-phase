@@ -1,7 +1,8 @@
-function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec)
+function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec, nr_monte_carlo)
     arguments
         nr_sample_vec (:,1) double {mustBeInteger} = 32:32:256, 
-        poly_order_vec (:,1) double {mustBeInteger} = 3:5
+        poly_order_vec (:,1) double {mustBeInteger} = 3:5,
+        nr_monte_carlo (1,1) double {mustBeInteger} = 1,
     end
     if isscalar(dbstack), close all; clc; end
     fprintf("\nTime budget runtime anylysis: CDMM vs. PECS\n");
@@ -20,40 +21,45 @@ function t2q_cdmm_pecs(nr_sample_vec, poly_order_vec)
             poly_order = poly_order_vec(idx_poly_order);
             params = Algorithm.Params(...
                 "nr_samples", nr_samples, ...
-                "nr_params", poly_order, ...
-                "max_mm_iters", nr_sample_vec(idx_samples)^3 ...
+                "nr_params", poly_order ...
                 );
     
-            [x0, a0] = params.get_random_sequence();
-
-            cdmm = Algorithm.CDMM.General(params);
-            tic; 
-            a = cdmm.run(a0);
-            time_cdmm = toc;
-            x = params.generate_signal(a);
-            [psl_cdmm, isl_cdmm] = params.compute_psl_isl_dB(x);
-            
-            pecs = Algorithm.PECS(params);
-            
-            a = a0;
-            x = x0;
-            time_pecs = 0;
-            for k = 1:1e6
+            for i = 1:nr_monte_carlo
+                [x0, a0] = params.get_random_sequence();
+    
+                cdmm = Algorithm.CDMM.General(params);
                 tic; 
-                xTmp = pecs.mpslStep(x);
-                [x, a] = pecs.perfectSquare(xTmp, a);
-                time_pecs_tmp = toc;
-                time_pecs = time_pecs + time_pecs_tmp;
-                isl_pecs = params.compute_isl_dB(a);
-                if time_pecs >= time_cdmm
-                    break;
+                a = cdmm.run(a0);
+                time_cdmm = toc;
+                x = params.generate_signal(a);
+                [psl_cdmm, isl_cdmm] = params.compute_psl_isl_dB(x);
+                
+                pecs = Algorithm.PECS(params);
+                
+                a = a0;
+                x = x0;
+                time_pecs = 0;
+                for k = 1:params.max_mm_iters
+                    tic; 
+                    xTmp = pecs.mpslStep(x);
+                    [x, a] = pecs.perfectSquare(xTmp, a);
+                    time_pecs_tmp = toc;
+                    time_pecs = time_pecs + time_pecs_tmp;
+                    isl_pecs = params.compute_isl_dB(a);
+                    if time_pecs >= time_cdmm
+                        break;
+                    end
                 end
+                x = params.generate_signal(a);
+                [psl_pecs, isl_pecs] = params.compute_psl_isl_dB(x);
+    
+                fisl = Algorithm.FISL(params);
+                x = fisl.run(x0); 
+                [psl_fisl, isl_fisl] = params.compute_psl_isl_dB(x);
+    
+                data_logger.append(nr_samples, poly_order, time_cdmm, psl_cdmm, isl_cdmm, time_pecs, psl_pecs, isl_pecs, psl_fisl, isl_fisl);
+                fprintf(".");
             end
-            x = params.generate_signal(a);
-            [psl_pecs, isl_pecs] = params.compute_psl_isl_dB(x);
-
-            data_logger.append(nr_samples, poly_order, time_cdmm, psl_cdmm, isl_cdmm, time_pecs, psl_pecs, isl_pecs);
-            fprintf(".");
         end
     end
     data_logger.save();
